@@ -1,0 +1,12 @@
+# config gin parameters
+# ----------------------------------------------------------------------------
+# ------------------------- 01- Dataset class parameter ------------------------
+# ----------------------------------------------------------------------------
+Dataset.dir_data = './data'
+Dataset.dataset_names = [ 'iDB-CERMEP', 'non-contrast-data']  #'adni',
+Dataset.paths = ['iDB-CERMEP/derivatives/coregistration' , 'non-contrast-data']  # 'adni2/ADNI-2_MP-RAGE_T1/ADNI',
+
+# ----------------------------------------------------------------------------
+# ------------------------- 01- main parameter ------------------------
+# ----------------------------------------------------------------------------
+main.operation = 'EDA' # 'EDA' or 'data_creation' or 'train' or 'test'
