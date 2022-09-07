@@ -1,30 +1,32 @@
 import gin
 import os
+import gin
+from abc import ABC, abstractmethod
 @gin.configurable
-class Dataset():
-    def __init__(self, dir_data, dataset_names, paths):
-        self.dir_data = dir_data
-        self.dataset_names = dataset_names
-        self.paths = paths
-        self.path_to_datasets_images_dic = {key: [] for key in self.dataset_names}
+class Dataset(ABC):
+    def __init__(self, name, directory, attribute):
+        self.directory = directory
+        self.name = name
+        self.path = attribute['path']
+        self.type = attribute['type']
+        self.path_to_images_per_modality = {key: [] for key in self.type}
         self.path_to_image_directory = None
+        self.path_to_images_per_patient = {}
         self.create_path_to_image_directory()
-        self.create_path_to_images()
-        self.path_to_datasets_images_dic
-
-
-    def print_address(self):
-        print(self.dir_data)
 
     def create_path_to_image_directory(self):
-        self.path_to_image_directory= [os.path.join(self.dir_data, path)  for  path in self.paths]
-        print(self.path_to_image_directory)
+        self.path_to_image_directory = [os.path.join(self.directory, path) for path in self.path]
 
-    def create_path_to_images(self):
+    @abstractmethod
+    def create_path_to_images_per_modality(self):
+        ...
 
-        for path, data_name in zip(self.path_to_image_directory, self.dataset_names):
-            self.path_to_datasets_images_dic[data_name] = [os.path.join(path, image_address) for image_address in os.listdir(path)]
-        return self.path_to_datasets_images_dic
+    @abstractmethod
+    def create_path_to_images_per_patient(self):
+        ...
+
+    def get_path_to_images(self):
+        return self.path_to_images_per_modality
 
 
 
