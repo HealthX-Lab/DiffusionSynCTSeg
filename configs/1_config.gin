@@ -1,11 +1,17 @@
 # config gin parameters
 # ----------------------------------------------------------------------------
-# ------------------------- 01- Dataset class parameter ------------------------
+# ------------------------- 01- DatasetsCollection class parameter ------------------------
 # ----------------------------------------------------------------------------
-Dataset.dir_data = './data'
-Dataset.dataset_names = [ 'iDB-CERMEP', 'non-contrast-data']  #'adni',
-Dataset.paths = ['iDB-CERMEP/derivatives/coregistration' , 'non-contrast-data']  # 'adni2/ADNI-2_MP-RAGE_T1/ADNI',
-
+DatasetsCollection.dir_data = './data'
+DatasetsCollection.attributes = { 'non-contrast-data': {'path': ['non-contrast-data'],
+                                              'type': ['CT'],
+                                              'class': 'NonContrastDataLoader'
+                                              },
+                        'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/coregistration'],
+                                              'type': ['CT','FLAIR', 'T1W'],
+                                              'class': 'iDBCERMEPLoader'
+                                              }
+                        }
 # ----------------------------------------------------------------------------
 # ------------------------- 01- main parameter ------------------------
 # ----------------------------------------------------------------------------
