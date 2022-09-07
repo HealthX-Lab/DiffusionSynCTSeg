@@ -1,12 +1,13 @@
 import gin
 from src.image_model import Image
-from src.dataset_model import Dataset
+from src.datasetscollection_model import DatasetsCollection
+
 
 @gin.configurable("main")
 def main(operation):
     if operation == 'EDA':
-        dic_dir_to_images = Dataset()
-        Image(dic_dir_to_images)
+        datasets = DatasetsCollection()
+        # image = Image(datasets.get_path_to_iamges())
 
 
 if __name__ == "__main__":
