@@ -25,9 +25,9 @@ class iDBCERMEPLoader(Dataset):
     def create_path_to_images_per_modality(self):
         for patient in self.patients_directory:
             modalities_dict = self.find_modalities(patient)
-            self.path_to_images_per_modality['CT'].append(modalities_dict['CT'])
-            self.path_to_images_per_modality['FLAIR'].append(modalities_dict['FLAIR'])
-            self.path_to_images_per_modality['T1W'].append(modalities_dict['T1W'])
+            self.path_to_images_per_modality['CT'].append(modalities_dict['CT'][0])
+            self.path_to_images_per_modality['FLAIR'].append(modalities_dict['FLAIR'][0])
+            self.path_to_images_per_modality['T1W'].append(modalities_dict['T1W'][0])
 
     def create_path_to_images_per_patient(self):
         for patient in self.patients_directory:
