@@ -25,8 +25,14 @@ class Dataset(ABC):
     def create_path_to_images_per_patient(self):
         ...
 
-    def get_path_to_images(self):
+    def get_path_to_images_per_modality(self):
         return self.path_to_images_per_modality
+    def get_path_to_images_per_patient(self):
+        return self.path_to_images_per_patient
+    def get_path_to_images(self):
+        path = {'path_per_patient': self.path_to_images_per_patient,
+                'path_per_modality': self.path_to_images_per_modality}
+        return path
 
 
 
