@@ -6,15 +6,20 @@ import matplotlib.pyplot as plt
 import ants
 
 class Image:
-    def __init__(self, dic_dir_to_images):
-        self.dic_dir_to_images = dic_dir_to_images
-        self.image_dic = {k: None for k in dic_dir_to_images}
-        self.read_images()
+    def __init__(self, image_path):
+        self.image_paths = image_path
+        self.image_dic = {k: {} for k in image_path}
+        self.read_images_per_modality()
 
-    def read_images(self):
-        for dataset_names, path_to_images in self.dic_dir_to_images.items():
-            paths_tmp = [img_path for img_path in path_to_images]
-            self.image_dic[dataset_names] = [(nib.load(img_path)).get_fdata() for img_path in path_to_images]
-            print(np.shape(self.image_dic))
-    # def read_nii(self):
+    def read_images_per_modality(self):
+        for dataset_name, path_to_images in self.image_paths.items():
+
+            for modality, img_paths in self.image_paths[dataset_name]['path_per_modality'].items():
+                self.image_dic[dataset_name][modality] = [(nib.load(path)).get_fdata() for path in img_paths]
+
+    def get_images(self):
+        return self.image_dic
+
+
+
 
