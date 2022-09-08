@@ -7,7 +7,9 @@ from src.datasetscollection_model import DatasetsCollection
 def main(operation):
     if operation == 'EDA':
         datasets = DatasetsCollection()
-        # image = Image(datasets.get_path_to_iamges())
+        image_obj = Image(datasets.get_paths())
+        images = image_obj.get_images()
+        a= 2
 
 
 if __name__ == "__main__":
