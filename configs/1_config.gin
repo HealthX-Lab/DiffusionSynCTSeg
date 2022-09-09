@@ -3,15 +3,15 @@
 # ------------------------- 01- DatasetsCollection class parameter ------------------------
 # ----------------------------------------------------------------------------
 DatasetsCollection.dir_data = './data'
-DatasetsCollection.attributes = { 'non-contrast-data': {'path': ['non-contrast-data'],
-                                              'type': ['CT'],
-                                              'class': 'NonContrastDataLoader'
-                                              },
-                        'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/coregistration'],
+DatasetsCollection.attributes = { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/coregistration'],
                                               'type': ['CT','FLAIR', 'T1W'],
                                               'class': 'iDBCERMEPLoader'
+                                              },
+                                  'non-contrast-data': {'path': ['non-contrast-data'],
+                                              'type': ['CT'],
+                                              'class': 'NonContrastDataLoader'
                                               }
-                        }
+                                    }
 # ----------------------------------------------------------------------------
 # ------------------------- 01- main parameter ------------------------
 # ----------------------------------------------------------------------------
