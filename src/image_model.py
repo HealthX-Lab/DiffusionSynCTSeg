@@ -37,8 +37,6 @@ class Image:
                 if (i%3==0):
                     ax.set_ylabel(modality_list[i//3])
                 i += 1
-
-
             if save_plot:
                 fig.savefig(os.path.join('./plots',f"{dataset_name}-samples.jpg"))
             if show_plot:
