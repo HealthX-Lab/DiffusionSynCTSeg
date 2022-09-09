@@ -9,7 +9,8 @@ def main(operation):
         datasets = DatasetsCollection()
         image_obj = Image(datasets.get_paths())
         images = image_obj.get_images()
-        a= 2
+        image_obj.show_images()
+        a = 2
 
 
 if __name__ == "__main__":
