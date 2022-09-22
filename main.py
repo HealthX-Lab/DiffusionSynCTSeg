@@ -10,6 +10,7 @@ def main(operation):
         image_obj = Image(datasets.get_paths())
         images = image_obj.get_images()
         image_obj.show_images()
+        image_obj.get_image_size()
         a = 2
 
 
