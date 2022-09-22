@@ -16,8 +16,25 @@ class Image:
             for modality, img_paths in self.image_paths[dataset_name]['path_per_modality'].items():
                 self.image_dic[dataset_name][modality] = [(nib.load(path)).get_fdata() for path in img_paths]
 
+
+
+
     def get_images(self):
         return self.image_dic
+    def get_image_size(self,file_name='dataset_properties'):
+        out_file = open(os.path.join('./data_summery', f'{file_name}.txt'), "w")
+        summery = ""
+        for dataset_name, path_to_images in self.image_paths.items():
+            summery = summery + '********' + dataset_name + '********' + '\n'
+            for modality, img_paths in self.image_paths[dataset_name]['path_per_modality'].items():
+                image = (nib.load(img_paths[0])).get_fdata()
+                summery = summery + '# modality:  ' + modality + ' # size : ' + str(np.shape(image))+ '\n'
+        out_file.write(summery)
+        out_file.write("\n")
+        out_file.close()
+
+
+        a = 2
     def create_list_images(self,images_with_modality,num_images_in_row,slide):
         images_list = []
         modality_list = []
