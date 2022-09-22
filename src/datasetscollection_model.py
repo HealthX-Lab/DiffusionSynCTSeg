@@ -3,6 +3,7 @@ import os
 import sys
 from src.NonContrastDataLoader_model import NonContrastDataLoader
 from src.iDBCERMEPLoader_model import iDBCERMEPLoader
+from src.neuromorphometrics_annotaion import  NeuroMorphometricAnnotatedDataset
 
 @gin.configurable
 class DatasetsCollection:
