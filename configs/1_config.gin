@@ -3,13 +3,17 @@
 # ------------------------- 01- DatasetsCollection class parameter ------------------------
 # ----------------------------------------------------------------------------
 DatasetsCollection.dir_data = './data'
-DatasetsCollection.attributes = { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/coregistration'],
+DatasetsCollection.attributes = { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'],
                                               'type': ['CT','FLAIR', 'T1W'],
                                               'class': 'iDBCERMEPLoader'
                                               },
                                   'non-contrast-data': {'path': ['non-contrast-data'],
                                               'type': ['CT'],
                                               'class': 'NonContrastDataLoader'
+                                              },
+                                  'NeuroMorphometricsOASIS': {'path': ['OASISLabels'],
+                                              'type': ['MR','GT'],
+                                              'class': 'NeuroMorphometricAnnotatedDataset'
                                               }
                                     }
 # ----------------------------------------------------------------------------
