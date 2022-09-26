@@ -48,7 +48,7 @@ main.operation = 'Train' # 'EDA' or 'data_creation' or 'Train' or 'test'
 # ----------------------------------------------------------------------------
 
 
-MyTransformer.transformers = [{ 'type': 'train',
+MyTransformer.transformers = {'train': [
                                     {'cls': 'monai.transforms.LoadImaged', 'arg': {'keys':["image", "label"]}},
                                     {'cls': 'monai.transforms.EnsureChannelFirstd', 'arg': {'keys':["image", "label"]}},
                                     {'cls': 'monai.transforms.RandCropByPosNegLabeld', 'arg': {'keys':["image", "label"],
@@ -60,8 +60,8 @@ MyTransformer.transformers = [{ 'type': 'train',
                                                                                 'image_key': 'image'
                                                                                  }
                                     }
-                                }
-                            ]
+                                    ]
+                             }
 
 
 
