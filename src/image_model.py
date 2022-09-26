@@ -34,7 +34,7 @@ class Image:
         out_file.close()
 
 
-        a = 2
+
     def create_list_images(self,images_with_modality,num_images_in_row,slide):
         images_list = []
         modality_list = []

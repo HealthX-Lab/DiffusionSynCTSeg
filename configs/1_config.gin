@@ -2,21 +2,66 @@
 # ----------------------------------------------------------------------------
 # ------------------------- 01- DatasetsCollection class parameter ------------------------
 # ----------------------------------------------------------------------------
+
+ # ----------------------------------------------------------------------------
+# ------------------------- 01- DatasetsCollection class parameter ------------------------
+# ----------------------------------------------------------------------------
 DatasetsCollection.dir_data = './data'
-DatasetsCollection.attributes = { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'],
-                                              'type': ['CT','FLAIR', 'T1W'],
-                                              'class': 'iDBCERMEPLoader'
-                                              },
-                                  'non-contrast-data': {'path': ['non-contrast-data'],
+main.attributes = {'EDA': { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'],
+                                           'type': ['CT','FLAIR', 'T1W'],
+                                           'class': 'iDBCERMEPLoader'
+                                            },
+                            'non-contrast-data': {'path': ['non-contrast-data'],
                                               'type': ['CT'],
                                               'class': 'NonContrastDataLoader'
-                                              },
-                                  'NeuroMorphometricsOASIS': {'path': ['OASISLabels'],
+                                             },
+                            'NeuroMorphometricsOASIS': {'path': ['OASISLabels'],
                                               'type': ['MR','GT'],
                                               'class': 'NeuroMorphometricAnnotatedDataset'
                                               }
-                                    }
+                            },
+                    'Train': { 'NeuroMorphometricsOASIS': {'path': ['OASISLabels'],
+                                              'type': ['MR','GT'],
+                                              'class': 'NeuroMorphometricAnnotatedDataset'
+                                              }
+                             },
+                    'Test': { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'],
+                                              'type': ['CT','FLAIR', 'T1W'],
+                                              'class': 'iDBCERMEPLoader'
+                                              },
+                               'non-contrast-data': {'path': ['non-contrast-data'],
+                                              'type': ['CT'],
+                                              'class': 'NonContrastDataLoader'
+                                              }
+                              }
+
+                   }
+
+
 # ----------------------------------------------------------------------------
 # ------------------------- 01- main parameter ------------------------
 # ----------------------------------------------------------------------------
-main.operation = 'EDA' # 'EDA' or 'data_creation' or 'train' or 'test'
+main.operation = 'Train' # 'EDA' or 'data_creation' or 'Train' or 'test'
+
+# ----------------------------------------------------------------------------
+# ------------------------- 01- transformer parameter ------------------------
+# ----------------------------------------------------------------------------
+
+
+MyTransformer.transformers = [{ 'type': 'train',
+                                    {'cls': 'monai.transforms.LoadImaged', 'arg': {'keys':["image", "label"]}},
+                                    {'cls': 'monai.transforms.EnsureChannelFirstd', 'arg': {'keys':["image", "label"]}},
+                                    {'cls': 'monai.transforms.RandCropByPosNegLabeld', 'arg': {'keys':["image", "label"],
+                                                                                'label_key': "label",
+                                                                                'spatial_size': (64, 64, 64),
+                                                                                'pos': 1,
+                                                                                'neg': 1,
+                                                                                'num_samples': 4,
+                                                                                'image_key': 'image'
+                                                                                 }
+                                    }
+                                }
+                            ]
+
+
+

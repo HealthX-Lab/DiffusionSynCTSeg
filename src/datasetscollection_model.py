@@ -7,7 +7,7 @@ from src.neuromorphometrics_annotaion import  NeuroMorphometricAnnotatedDataset
 
 @gin.configurable
 class DatasetsCollection:
-    def __init__(self, dir_data, attributes):
+    def __init__(self,  attributes, dir_data):
         self.directory = dir_data
         self.attributes = attributes
         self.names = [names for names in self.attributes]
@@ -23,6 +23,9 @@ class DatasetsCollection:
 
     def get_paths(self):
         return self.path
+
+    def get_names(self):
+        return self.names
 
 
 

@@ -3,3 +3,6 @@ ants
 numpy
 nibabel
 matplotlib
+torch
+torchvision
+monai
