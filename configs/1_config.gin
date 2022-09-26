@@ -41,7 +41,7 @@ main.attributes = {'EDA': { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'
 # ----------------------------------------------------------------------------
 # ------------------------- 01- main parameter ------------------------
 # ----------------------------------------------------------------------------
-main.operation = 'Train' # 'EDA' or 'data_creation' or 'Train' or 'test'
+main.operation = 'EDA' # 'EDA' or 'data_creation' or 'Train' or 'test'
 
 # ----------------------------------------------------------------------------
 # ------------------------- 01- transformer parameter ------------------------

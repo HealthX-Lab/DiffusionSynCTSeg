@@ -14,7 +14,7 @@ def main(operation, attributes):
         image_obj.get_image_size()
     elif operation == 'Train':
         training_chain = TrainingChain(attributes['Train'])
-        a = 2
+
 
 
 
