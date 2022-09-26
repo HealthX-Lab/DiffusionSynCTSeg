@@ -21,19 +21,20 @@ from monai import *
 # )
 @gin.configurable
 class MyTransformer:
-    def __init__(self, flag_train, **kwargs):
-        # kwargs = kwargs['train'] if flag_train else kwargs['test']
-
-        if flag_train:
-            kwargs = kwargs['train']
-        # train_transforms = Compose(
-        #     [
-        self.transformers = kwargs['transformers']
+    def __init__(self, flag_train, transformers):
+        transformers = transformers['train'] if flag_train else transformers['test']
+        self.transformers = transformers
+        self.data_transformer_list = []
         self.compose_transformer()
-        a=2
+        self.data_transforms = monai.transforms.Compose(self.data_transformer_list)
+
     def compose_transformer(self):
         a = self.transformers
         for dic_transformers in self.transformers:
             transformer_class = eval(dic_transformers['cls'])
-            transformer_obj = transformer_class(**dic_transformers['arg'])
+            a = transformer_class(**dic_transformers['arg'])
+            self.data_transformer_list.append(a)
+
+    def get_data_transformer(self):
+        return self.data_transforms
 
