@@ -19,6 +19,7 @@ class TrainingChain:
     def build_chain(self):
         self.fill_data_dictionary()
         self.transformer_obj = MyTransformer(flag_train=1)
+        self.data_transformer = self.transformer_obj.get_data_transformer()
 
 
     def fill_data_dictionary(self):
