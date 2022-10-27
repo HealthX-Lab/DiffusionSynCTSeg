@@ -1,7 +1,5 @@
 # config gin parameters
 # ----------------------------------------------------------------------------
-# ------------------------- 01- DatasetsCollection class parameter ------------------------
-# ----------------------------------------------------------------------------
 
  # ----------------------------------------------------------------------------
 # ------------------------- 01- DatasetsCollection class parameter ------------------------
@@ -33,6 +31,15 @@ main.attributes = {'EDA': { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'
                                               'type': ['CT'],
                                               'class': 'NonContrastDataLoader'
                                               }
+                              },
+                    'Script': { 'Subject': {'path': ['iDB-CERMEP/derivatives/MNI'],
+                                              'type': ['CT','FLAIR', 'T1W'],
+                                              'class': 'iDBCERMEPLoader'
+                                              },
+                               'Atlas': {'path': ['OASISLabels'],
+                                              'type': ['MR','GT'],
+                                              'class': 'NeuroMorphometricAnnotatedDataset'
+                                              }
                               }
 
                    }
@@ -41,7 +48,7 @@ main.attributes = {'EDA': { 'iDB-CERMEP': {'path': ['iDB-CERMEP/derivatives/MNI'
 # ----------------------------------------------------------------------------
 # ------------------------- 01- main parameter ------------------------
 # ----------------------------------------------------------------------------
-main.operation = 'EDA' # 'EDA' or 'data_creation' or 'Train' or 'test'
+main.operation = 'Script' # 'EDA' or 'data_creation' or 'Train' or 'test'
 
 # ----------------------------------------------------------------------------
 # ------------------------- 01- transformer parameter ------------------------
