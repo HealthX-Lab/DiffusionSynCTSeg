@@ -82,29 +82,40 @@ for target_image in "$new_target_images_folder"/*
 	   full_path="$registered_image_dir/$target_basename"
 	   mkdir -p $full_path
 
+	   echo 'target _image' $target_image
+
 	   dir=$(pwd)
 	   parentdir="$(dirname "$dir")"
      target_image="$parentdir$target_image"
      target_image=${target_image//..}
+     echo 'target _image' $target_image
 
 	   i=0
 	   for atlas_image in "$new_atlas_dir"/*
 	   do
+	     echo "&%&%&%" $atlas_image
       atlas_image="$parentdir$atlas_image"
+
+      echo "&%&%&%" $atlas_image
       atlas_image=${atlas_image//..}
 	     label_prefix='_seg.nii'
        label_basename="$(basename -- $atlas_image)"
        label_basename=${label_basename%.nii}
        label_basename="$label_basename$label_prefix"
       label_full_path="$new_atlas_label_dir/$label_basename"
+      echo "label_full_path" $label_full_path
       label_full_path="$parentdir$label_full_path"
       label_full_path=${label_full_path//..}
+      echo "label_full_path" $label_full_path
 
 	     i=$((i+1))
-      cd $full_path
-	     ANTS 3 -m CC[$target_image,$atlas_image,1,2] -i 10x50x50x20 -o sub"$i"-to-t1 -t SyN[0.25] -r Gauss[3,0]
-       WarpImageMultiTransform 3 $label_full_path Sub"$i"-to-t1-ventricle-lin.nii.gz -R $target_image sub"$i"-to-t1Warp.nii.gz sub"$i"-to-t1Affine.txt
-	    cd -
+#      cd $full_path
+      sub_name=sub"$i"-to-t1
+      tmp="$full_path/$sub_name"
+      echo $tmp
+	     ANTS 3 -m CC[$target_image,$atlas_image,1,2] -i 10x50x50x20 -o $tmp -t SyN[0.25] -r Gauss[3,0]
+#       WarpImageMultiTransform 3 $label_full_path Sub"$i"-to-t1-ventricle-lin.nii.gz -R $target_image sub"$i"-to-t1Warp.nii.gz sub"$i"-to-t1Affine.txt
+#	    cd -
 	   done
 
 done
