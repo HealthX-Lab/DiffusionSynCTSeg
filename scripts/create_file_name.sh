@@ -18,13 +18,4 @@ for i in 0 1 2; do
     done
 done
 
-#!/bin/bash
-###############################################
-source_atlas_dir=/mnt/ms_project/domain_adaptation_CTscan/data/Neuromorphometric/OASISLabels
-new_atlas_dir=/home/rtm/data/labelFusion/Atlas
-new_atlas_label_dir=/home/rtm/data/labelFusion/AtlasLabel
-target_dataset=/mnt/ms_project/domain_adaptation_CTscan/data/iDB/coregistration
-new_target_images_folder=/home/rtm/data/labelFusion/target
-registered_image_dir=/home/rtm/data/labelFusion/iDB-Registered
-result_path=/home/rtm/data/labelFusion/result
 
