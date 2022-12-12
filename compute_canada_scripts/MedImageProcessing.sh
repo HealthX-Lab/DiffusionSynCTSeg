@@ -1,40 +1,46 @@
 #!/bin/bash
 
-
+###### mri paths
 N4_atlas_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/N4BiasFieldCorrected/atlas/
 N4_target_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/N4BiasFieldCorrected/iBD/
-
 SS_target_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/SkullStrippedimages/iDB_mri/
-SS_target_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/SkullStrippedimages/iDB_ct/
 SS_atlas_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/SkullStrippedimages/atlas/
-
-
 registered_target_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/iDB_mri/
-registered_target_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/iDB_ct/
 registered_atlas_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/atlas/
 registered_atlas_label_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/atlas_label/
-
 mni_image=/home/rtm/scratch/rtm/ms_project/data/icbm/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii
 mni_GT=/home/rtm/scratch/rtm/data/icbm/mni_icbm152_t1_lateralventricles.nii.gz
 
+###### CT paths
+Threshold_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Threshold/iDB_ct/
+Gassuain_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Gassuain/iDB_ct/
+BET_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/BET/iDB_ct/
+Crop_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Crop/iDB_ct/
+registered_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/iDB_ct/
+resampled_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/ResampleadImages/iDB_ct/
+template_ct_path=/home/rtm/scratch/rtm/ms_project/data/CT_template/NCCT-template-affine-brain.nii.gz
 
-mkdir -p $registered_atlas_path $registered_target_path $registered_atlas_label_path $SS_target_path $SS_atlas_path $N4_target_path $N4_atlas_path $SS_target_ct_path $registered_target_ct_path
+
+mkdir -p $Threshold_ct_path $Gassuain_ct_path $BET_ct_path $Crop_ct_path $registered_ct_path $resampled_ct_path
+mkdir -p $registered_atlas_path $registered_target_path $registered_atlas_label_path $SS_target_path $SS_atlas_path $N4_target_path $N4_atlas_path
 echo 'paths file created'
 level_flag=0 # atlas images process
 # reading command line arguments
-while getopts "a:l:t:c:m:" OPT
+while getopts "a:l:t:c:" OPT
   do
   case $OPT in
-      a) #atlas
+   a) #atlas
     image_name=$OPTARG
     echo '-a  atlas' $image_name
 
    ;;
-      l) #label image
+   l) #label image
    label_name=$OPTARG
    echo '-l  label' $label_name
    ;;
-      t) #targetimage
+
+
+   t) #targetimage
    image_name=$OPTARG
    level_flag=1
    echo '-t  target MRI' $image_name
@@ -46,12 +52,7 @@ while getopts "a:l:t:c:m:" OPT
    echo '-c  target CT' $ct_image_name
 
    ;;
-   m) #mri_target
-   mri_image_name=$OPTARG
-   level_flag=2
-   echo '-m  target MRI' $mri_image_name
 
-   ;;
    esac
 done
 
@@ -97,8 +98,8 @@ if [[ $level_flag == 0 ]]; then
 	   	#$full_image_name_registered  /home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/OASIS_atlas_label_registered2/Registered_OAS1_0249_MR2_seg.nii
 
 
-      flirt -in $full_image_name_N4 -ref $mni_image -out $full_image_name_registered -omat full_image_name_registered_mat
-      flirt -in $label_name -ref $mni_image -init full_image_name_registered_mat -applyxfm -out $full_label_name_registered -interp nearestneighbour
+      flirt -in $full_image_name_N4 -ref $mni_image -out $full_image_name_registered -omat $full_image_name_registered_mat
+      flirt -in $label_name -ref $mni_image -init $full_image_name_registered_mat -applyxfm -out $full_label_name_registered -interp nearestneighbour
 
 
 
@@ -151,7 +152,6 @@ if [[ $level_flag == 1 ]]; then
 fi
 
 ###### registered mni_iDB CT to MRI
-
 if [[ $level_flag == 2 ]]; then
 
       ct_input_basename="$(basename -- $ct_image_name)"
@@ -164,7 +164,8 @@ if [[ $level_flag == 2 ]]; then
 	   	echo 'threshold_image_path ' $threshold_image_path
 	   	ls -l $ct_image_name
 
-      fslmaths -dt int $ct_image_name -thr 0 -uthr 100 $threshold_image_path
+#      fslmaths -dt int $ct_image_name -thr 0 -uthr 100 $threshold_image_path
+      fslmaths  $ct_image_name -thr 0 -uthr 100 $threshold_image_path
 
 
 
@@ -178,6 +179,7 @@ if [[ $level_flag == 2 ]]; then
       img_postfix='SS_'
 	    image_basename="$img_postfix$input_basename_without_postfix"
 	    SS_image_path="$BET_ct_path$image_basename"
+	    SS_image_path_with_nii="$BET_ct_path$img_postfix$ct_input_basename"
 	    mask='_mask.nii'
 	    bet $blur_image_path $SS_image_path -m -o
 	   	echo '$SS_image_path  mask_SS_image_path' $SS_image_path  $mask_SS_image_path
@@ -204,20 +206,12 @@ if [[ $level_flag == 2 ]]; then
 	    image_basename="$img_postfix$ct_input_basename"
 	    Resampled_image_path="$resampled_ct_path$image_basename"
 	   	echo '$Resampled_image_path ' $Resampled_image_path
-      flirt -in $ct_image_name -ref $template_ct_path -out SResampled_image_path -applyxfm -init $matrix_image_path
+      flirt -in $ct_image_name -ref $template_ct_path -out $Resampled_image_path -applyxfm -init $matrix_image_path -datatype int
 
 
 
 
 fi
-
-
-
-
-
-
-
-
 
 
 
