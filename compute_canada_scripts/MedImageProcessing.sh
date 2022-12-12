@@ -151,33 +151,73 @@ if [[ $level_flag == 1 ]]; then
 fi
 
 ###### registered mni_iDB CT to MRI
+
 if [[ $level_flag == 2 ]]; then
 
-
-
-
       ct_input_basename="$(basename -- $ct_image_name)"
+      input_basename_without_postfix=$(echo $ct_input_basename| cut -d . -f 1 -)
       echo 'ct_input_basename' $ct_input_basename #sub-0027_space-pet_FLAIR.nii.gz
 
-#      img_postfix='Registered_'
-#
-#	   image_basename="$img_postfix$ct_input_basename"
-#	   full_image_name_registered="$registered_target_ct_path$image_basename"
-#	   	echo '$full_image_name_ct_registered ' $full_image_name_registered
-#
-#
-#      flirt -in $ct_image_name -ref $mri_image_name -out $full_image_name_registered
+      img_postfix='Threshold_'
+	    image_basename="$img_postfix$ct_input_basename"
+	    threshold_image_path="$Threshold_ct_path$image_basename"
+	   	echo 'threshold_image_path ' $threshold_image_path
+	   	ls -l $ct_image_name
 
-      img_postfix='SkullStripped_'
-     input_basename_without_postfix=$(echo $ct_input_basename| cut -d . -f 1 -)
-	   ct_basename="$img_postfix$input_basename_without_postfix"
-	   full_ct_name_SS="$SS_target_ct_path$ct_basename"
+      fslmaths -dt int $ct_image_name -thr 0 -uthr 100 $threshold_image_path
 
-      bet $ct_image_name $full_ct_name_SS -m -f 0.15 -g 0.1 -R -B
+
+
+      img_postfix='Gassuain_'
+	    image_basename="$img_postfix$ct_input_basename"
+	    blur_image_path="$Gassuain_ct_path$image_basename"
+	   	echo 'blur_image_path ' $blur_image_path
+      fslmaths $threshold_image_path -s 1 $blur_image_path
+
+
+      img_postfix='SS_'
+	    image_basename="$img_postfix$input_basename_without_postfix"
+	    SS_image_path="$BET_ct_path$image_basename"
+	    mask='_mask.nii'
+	    bet $blur_image_path $SS_image_path -m -o
+	   	echo '$SS_image_path  mask_SS_image_path' $SS_image_path  $mask_SS_image_path
+      mask_SS_image_path="$SS_image_path$mask"
+
+      img_postfix='crop_'
+	    image_basename="$img_postfix$ct_input_basename"
+	    cropped_image_path="$Crop_ct_path$image_basename"
+	   	echo 'cropped_image_path   mask_SS_image_path' $cropped_image_path  $mask_SS_image_path
+      fslmaths $ct_image_name -mul $mask_SS_image_path $cropped_image_path
+
+      img_postfix='Registered_'
+	    image_basename="$img_postfix$ct_input_basename"
+	    Registered_image_path="$registered_ct_path$image_basename"
+
+	    img_postfix='matrix_'
+	    matrix_postfix='.mat'
+	    image_basename="$img_postfix$input_basename_without_postfix$matrix_postfix"
+	    matrix_image_path="$registered_ct_path$image_basename"
+	   	echo '$matrix_image_path Registered_image_path  ' $matrix_image_path  $Registered_image_path
+	   	flirt -in $cropped_image_path -ref $template_ct_path -out $Registered_image_path -omat $matrix_image_path -cost normmi
+
+      img_postfix='Resampled_'
+	    image_basename="$img_postfix$ct_input_basename"
+	    Resampled_image_path="$resampled_ct_path$image_basename"
+	   	echo '$Resampled_image_path ' $Resampled_image_path
+      flirt -in $ct_image_name -ref $template_ct_path -out SResampled_image_path -applyxfm -init $matrix_image_path
+
 
 
 
 fi
+
+
+
+
+
+
+
+
 
 
 
