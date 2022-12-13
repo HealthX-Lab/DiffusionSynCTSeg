@@ -1,21 +1,15 @@
 #!/bin/bash
 
-
-
-
 #########################ADNILabels#########################
 
 BASE_PATH=/home/rtm/scratch/rtm/ms_project/data/projectNeuromorphometrics/ADNILabels
-#BASE_PATH=/home/rtm/scratch/rtm/ms_project/test/ADNILabels
 atlas_path=( $( ls -a ${BASE_PATH}/*/ADNI*.nii))
 label_path=( $( ls -a ${BASE_PATH}/*/*seg.nii))
 
 #########################OASISLabels#########################
 #BASE_PATH=/home/rtm/scratch/rtm/ms_project/data/projectNeuromorphometrics/OASISLabels
-##BASE_PATH=/home/rtm/scratch/rtm/ms_project/test/OASISLabels
 #atlas_path=( $( ls -a ${BASE_PATH}/*/*_MR1.nii and ls -a ${BASE_PATH}/*/*_MR2.nii ))
 #label_path=( $( ls -a ${BASE_PATH}/*/*seg.nii))
-
 
 for i in $(seq ${#atlas_path[@]}); do
     atlas=${atlas_path[i-1]}

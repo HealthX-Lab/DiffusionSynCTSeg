@@ -11,4 +11,3 @@ for i in $(seq ${#target_mri_path[@]}); do
       -j Regular /home/rtm/scratch/rtm/ms_project/domain_adaptation_CTscan/scripts/MedImageProcessing.sh  -t $target_mri
 
 done
-

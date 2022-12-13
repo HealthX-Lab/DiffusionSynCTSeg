@@ -80,7 +80,6 @@ if [[ $level_flag == 0 ]]; then
 	   image_basename="$img_postfix$input_basename"
 	   full_image_name_registered="$registered_atlas_path$image_basename"
 	   	echo '$full_image_name_registered ' $full_image_name_registered
-
 	   	#$full_image_name_registered  /home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/OASIS_atlas_registered2/Registered_OAS1_0202_MR1.nii
 
 	   	img_postfix='omat_'
@@ -101,9 +100,6 @@ if [[ $level_flag == 0 ]]; then
       flirt -in $full_image_name_N4 -ref $mni_image -out $full_image_name_registered -omat $full_image_name_registered_mat
       flirt -in $label_name -ref $mni_image -init $full_image_name_registered_mat -applyxfm -out $full_label_name_registered -interp nearestneighbour
 
-
-
-
       img_postfix='SkullStripped_'
 	   image_basename="$img_postfix$input_basename_without_postfix"
 	   full_image_name_SS="$SS_atlas_path$image_basename"
@@ -111,11 +107,6 @@ if [[ $level_flag == 0 ]]; then
 	   #$full_image_name_SS  /home/rtm/scratch/rtm/data/MedImagepreprocess/SkullStrippedimages/atlasOASIS2/SkullStripped_OAS1_0202_MR1.nii
 
       bet $full_image_name_registered $full_image_name_SS -m -f 0.15 -g 0.1 -R -B
-
-
-
-
-    ###############################################3
 
 fi
 
@@ -134,7 +125,6 @@ if [[ $level_flag == 1 ]]; then
 	   echo '$image_name ' $image_name ' $full_image_name_N4 ' $full_image_name_N4
 	   #$image_name  /home/rtm/scratch/rtm/data/labelFusion/target/sub-0027_space-pet_FLAIR.nii.gz  $full_image_name_N4  /home/rtm/scratch/rtm/data/MedImagepreprocess/N4BiasFieldCorrected/target_IBD2/N4correct_sub-0027_space-pet_FLAIR.nii.gz
 
-
       N4BiasFieldCorrection -d 3 -r 1 -b [200,2] -c [400x200x100x40,0.0] \
       -i $image_name -o $full_image_name_N4
 
@@ -145,9 +135,6 @@ if [[ $level_flag == 1 ]]; then
 	   full_image_name_SS="$SS_target_path$image_basename"
 
       bet $full_image_name_N4 $full_image_name_SS -m -f 0.15 -g 0.1 -R -B
-
-
-
 
 fi
 

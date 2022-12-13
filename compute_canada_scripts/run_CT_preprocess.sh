@@ -1,11 +1,5 @@
 #!/bin/bash
 
-
-
-#/home/rtm/scratch/rtm/ms_project/data/OASIS3CT/OASIS3_CT_70
-#/home/rtm/scratch/rtm/ms_project/data/iDB/coregistration
-#/home/rtm/scratch/rtm/ms_project/data/non_contrast_data
-#BASE_PATH=/home/rtm/scratch/rtm/ms_project/data/iDB/MNI
 BASE_PATH=/home/rtm/scratch/rtm/ms_project/test/iDB
 target_ct_path=( $( ls -a ${BASE_PATH}/*ct.nii.gz))
 
@@ -18,28 +12,3 @@ for i in $(seq ${#target_ct_path[@]}); do
       -j Regular /home/rtm/scratch/rtm/ms_project/domain_adaptation_CTscan/scripts/MedImageProcessing.sh  -c $target_ct
 
 done
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
