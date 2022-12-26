@@ -6,7 +6,7 @@ BASE_PATH=/home/rtm/scratch/rtm/ms_project/data/projectNeuromorphometrics/ADNILa
 atlas_path=( $( ls -a ${BASE_PATH}/*/ADNI*.nii))
 label_path=( $( ls -a ${BASE_PATH}/*/*seg.nii))
 
-#########################OASISLabels#########################
+#########################OASISLabels########################
 #BASE_PATH=/home/rtm/scratch/rtm/ms_project/data/projectNeuromorphometrics/OASISLabels
 #atlas_path=( $( ls -a ${BASE_PATH}/*/*_MR1.nii and ls -a ${BASE_PATH}/*/*_MR2.nii ))
 #label_path=( $( ls -a ${BASE_PATH}/*/*seg.nii))

@@ -9,6 +9,6 @@ for i in $(seq ${#target_ct_path[@]}); do
 
     echo $target_mri
     neurogliaSubmit -I  /project/6055004/tools/singularity/khanlab-neuroglia-dwi-master-v1.4.1.simg   \
-      -j Regular /home/rtm/scratch/rtm/ms_project/domain_adaptation_CTscan/scripts/MedImageProcessing.sh  -c $target_ct
+      -j Regular /home/rtm/scratch/rtm/ms_project/domain_adaptation_CTscan/scripts/MedImageProcessing.sh   -c $target_ct
 
 done
