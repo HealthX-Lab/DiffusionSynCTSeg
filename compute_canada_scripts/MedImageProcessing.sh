@@ -140,7 +140,7 @@ if [[ $level_flag == 1 ]]; then
 
 
       flirt -in $image_name -ref $mni_image -out $full_image_name_registered -omat $full_image_name_registered_mat
-      flirt -in $label_name -ref $mni_image -init $full_image_name_registered_mat -applyxfm -out $full_label_name_registered
+      flirt -in $label_name -ref $mni_image -init $full_image_name_registered_mat -applyxfm -out $full_label_name_registered -interp nearestneighbour
 
 
 fi
