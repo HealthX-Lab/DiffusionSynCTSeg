@@ -11,8 +11,8 @@ for folder in os.listdir(dir_path):
     # check if current path is a file
     path = os.path.join(dir_path, folder,'image','Labels.nii.gz')
     # path = os.path.join(dir_path, folder,str(folder)+ '_seg.nii')
-
-    image = (nib.load(path)).get_fdata()
+    nib_img = nib.load(path)
+    image = nib_img.get_fdata()
     arr4 = np.where(image == 4, 50, 0)
     arr11 = np.where(image == 11, 100, 0)
     arr15 = np.where(image == 15, 150, 0)
@@ -22,7 +22,7 @@ for folder in os.listdir(dir_path):
 
 
     prefix = 'label_' + str(folder) + '.nii.gz'
-    new_image = nib.Nifti1Image(arr.astype(np.float64), np.eye(4))
+    new_image = nib.Nifti1Image(arr.astype(np.float64), affine=nib_img.affine,header=nib_img.header)
     # save_path = os.path.join(save_dir, folder+'.nii.gz')
     save_path = os.path.join(save_dir, prefix)
     print('save_path', save_path)
