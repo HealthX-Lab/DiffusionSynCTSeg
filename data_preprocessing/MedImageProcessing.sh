@@ -255,14 +255,6 @@ if [[ $level_flag == 4 ]]; then
       flirt -in $CT_image_name -ref $mni_image -init $full_MRI_name_registered_mat -applyxfm -out $full_CT_name_registered
 
 
-
-      img_postfix='Threshold_'
-	    image_basename="$img_postfix$CT_basename"
-	    threshold_image_path="$Window_ct_path$image_basename"
-	   	echo 'threshold_image_path ' $threshold_image_path
-      fslmaths  $full_CT_name_registered -thr -100 -uthr 1000 $threshold_image_path
-
-
 fi
 
 
