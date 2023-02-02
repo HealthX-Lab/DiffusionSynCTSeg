@@ -8,38 +8,100 @@ import util.util as util
 from util.image_pool import ImagePool
 from .base_model import BaseModel
 from . import networks
+import torch.nn.functional as F
+import torch.nn as nn
 import sys
+import skimage
+
+def CrossEntropyLoss2d(inputs, targets, weight=None, size_average=True):
+    lossval = 0
+    nll_loss = nn.NLLLoss2d(weight, size_average)
+    for output, label in zip(inputs, targets):
+        lossval += nll_loss(F.log_softmax(output), label)
+    return lossval
+
+def CrossEntropy2d(input, target, weight=None, size_average=False):
+    # input:(n, c, h, w) target:(n, h, w)
+    n, c, h, w = input.size()
+
+    input = input.transpose(1, 2).transpose(2, 3).contiguous()
+    input = input[target.view(n, h, w, 1).repeat(1, 1, 1, c) >= 0].view(-1, c)
+
+    target_mask = target >= 0
+    target = target[target_mask]
+    #loss = F.nll_loss(F.log_softmax(input), target, weight=weight, size_average=False)
+    loss = F.cross_entropy(input, target, weight=weight, size_average=False)
+    if size_average:
+        loss /= target_mask.sum().data[0]
+
+        return loss
+#
+def cross_entropy2d(input, target, weight=None, size_average=True):
+    # input: (n, c, h, w), target: (n, h, w)
+    n, c, h, w = input.size()
+    # log_p: (n, c, h, w)
+    log_p = F.log_softmax(input)
+    # log_p: (n*h*w, c)
+    log_p = log_p.transpose(1, 2).transpose(2, 3).contiguous().view(-1, c)
+    log_p = log_p[target.view(n, h, w, 1).repeat(1, 1, 1, c) >= 0]
+    log_p = log_p.view(-1, c)
+    # target: (n*h*w,)
+    mask = target >= 0
+    target = target[mask]
+    loss = F.nll_loss(log_p, target, weight=weight, size_average=False)
+    if size_average:
+        loss /= mask.data.sum()
+    return loss
+
+def dice_loss_norm(input, target):
+    """
+    input is a torch variable of size BatchxnclassesxHxW representing log probabilities for each class
+    target is a 1-hot representation of the groundtruth, shoud have same size as the input
+    """
+    assert input.size() == target.size(), "Input sizes must be equal."
+    assert input.dim() == 4, "Input must be a 4D Tensor."
+    # uniques = np.unique(target.numpy())
+    # assert set(list(uniques)) <= set([0, 1]), "target must only contain zeros and ones"
+
+    probs = F.softmax(input)
+    num = probs * target  # b,c,h,w--p*g
+    num = torch.sum(num, dim=3)
+    num = torch.sum(num, dim=2)  #
+    num = torch.sum(num, dim=0)# b,c
+
+    den1 = probs * probs  # --p^2
+    den1 = torch.sum(den1, dim=3)
+    den1 = torch.sum(den1, dim=2)  # b,c,1,1
+    den1 = torch.sum(den1, dim=0)
+
+    den2 = target * target  # --g^2
+    den2 = torch.sum(den2, dim=3)
+    den2 = torch.sum(den2, dim=2)  # b,c,1,1
+    den2 = torch.sum(den2, dim=0)
+
+    dice = 2 * ((num+0.0000001) / (den1 + den2+0.0000001))
+    dice_eso = dice[1:]  # we ignore bg dice val, and take the fg
+    dice_total = -1 * torch.sum(dice_eso) / dice_eso.size(0)  # divide by batch_sz
+    return dice_total
 
 
-class CycleGANModel(BaseModel):
+class CycleSEGModel(BaseModel):
     def name(self):
-        return 'CycleGANModel'
+        return 'CycleSEGModel'
 
     def initialize(self, opt):
         BaseModel.initialize(self, opt)
 
-        # nb = opt.batchSize
-        # size = opt.fineSize
-        # self.input_A = self.Tensor(nb, opt.input_nc, size, size)
-        # self.input_B = self.Tensor(nb, opt.output_nc, size, size)
+        self.netG_A = networks.define_G(opt)
+        self.netG_B = networks.define_G(opt)
 
-        # load/define networks
-        # The naming conversion is different from those used in the paper
-        # Code (paper): G_A (G), G_B (F), D_A (D_Y), D_B (D_X)
-
-        self.netG_A = networks.define_G(opt.input_nc, opt.output_nc,
-                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, self.gpu_ids)
-        self.netG_B = networks.define_G(opt.output_nc, opt.input_nc,
-                                        opt.ngf, opt.which_model_netG, opt.norm, not opt.no_dropout, self.gpu_ids)
+        self.netG_seg = networks.define_G(opt,seg_net=True)
 
         if self.isTrain:
             use_sigmoid = opt.no_lsgan
-            self.netD_A = networks.define_D(opt.output_nc, opt.ndf,
-                                            opt.which_model_netD,
-                                            opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_ids)
-            self.netD_B = networks.define_D(opt.input_nc, opt.ndf,
-                                            opt.which_model_netD,
-                                            opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_ids)
+            self.netD_A = networks.define_D(opt)
+            self.netD_B = networks.define_D(opt)
+
         if not self.isTrain or opt.continue_train:
             which_epoch = opt.which_epoch
             self.load_network(self.netG_A, 'G_A', which_epoch)
@@ -47,6 +109,7 @@ class CycleGANModel(BaseModel):
             if self.isTrain:
                 self.load_network(self.netD_A, 'D_A', which_epoch)
                 self.load_network(self.netD_B, 'D_B', which_epoch)
+                self.load_network(self.netG_seg, 'Seg_A', which_epoch)
 
         if self.isTrain:
             self.old_lr = opt.lr
@@ -57,7 +120,7 @@ class CycleGANModel(BaseModel):
             self.criterionCycle = torch.nn.L1Loss()
             self.criterionIdt = torch.nn.L1Loss()
             # initialize optimizers
-            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_B.parameters()),
+            self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_seg.parameters(), self.netG_B.parameters()),
                                                 lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D_A = torch.optim.Adam(self.netD_A.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D_B = torch.optim.Adam(self.netD_B.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
@@ -71,16 +134,11 @@ class CycleGANModel(BaseModel):
         print('-----------------------------------------------')
 
     def set_input(self, input):
-        AtoB = self.opt.which_direction == 'AtoB'
-        input_A = input['A' if AtoB else 'B']
-        input_B = input['B' if AtoB else 'A']
-        self.input_A.resize_(input_A.size()).copy_(input_A)
-        self.input_B.resize_(input_B.size()).copy_(input_B)
-        self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.real_A = input['MRI'].to(device)
+        self.real_B = input['CT'].to(device)
+        self.real_Seg = input['label'].to(device)
 
-    def forward(self):
-        self.real_A = Variable(self.input_A)
-        self.real_B = Variable(self.input_B)
 
     def test(self):
         self.real_A = Variable(self.input_A, volatile=True)
@@ -147,13 +205,18 @@ class CycleGANModel(BaseModel):
         # Backward cycle loss
         self.rec_B = self.netG_A.forward(self.fake_A)
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
+        # Segmentation loss
+        self.seg_fake_B = self.netG_seg.forward(self.fake_B)
+        if self.opt.seg_norm == 'DiceNorm':
+            self.loss_seg = dice_loss_norm(self.seg_fake_B, self.real_Seg)
+            self.loss_seg = self.loss_seg
+
+
         # combined loss
-        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B
+        self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B + self.loss_seg
         self.loss_G.backward()
 
     def optimize_parameters(self):
-        # forward
-        self.forward()
         # G_A and G_B
         self.optimizer_G.zero_grad()
         self.backward_G()
@@ -174,6 +237,7 @@ class CycleGANModel(BaseModel):
         D_B = self.loss_D_B.data[0]
         G_B = self.loss_G_B.data[0]
         Cyc_B = self.loss_cycle_B.data[0]
+        Seg_B = self.loss_seg.data[0]
         if self.opt.identity > 0.0:
             idt_A = self.loss_idt_A.data[0]
             idt_B = self.loss_idt_B.data[0]
@@ -181,11 +245,14 @@ class CycleGANModel(BaseModel):
                                 ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B)])
         else:
             return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
-                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B)])
+                                ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
+                                ('Seg', Seg_B)])
 
     def get_current_visuals(self):
         real_A = util.tensor2im(self.real_A.data)
         fake_B = util.tensor2im(self.fake_B.data)
+        seg_B = util.tensor2seg(torch.max(self.seg_fake_B.data,dim=1,keepdim=True)[1])
+        manual_B = util.tensor2seg(torch.max(self.real_Seg.data,dim=1,keepdim=True)[1])
         rec_A = util.tensor2im(self.rec_A.data)
         real_B = util.tensor2im(self.real_B.data)
         fake_A = util.tensor2im(self.fake_A.data)
@@ -196,7 +263,7 @@ class CycleGANModel(BaseModel):
             return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A), ('idt_B', idt_B),
                                 ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B), ('idt_A', idt_A)])
         else:
-            return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A),
+            return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A), ('seg_B',seg_B), ('manual_B',manual_B),
                                 ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B)])
 
     def save(self, label):
@@ -204,6 +271,7 @@ class CycleGANModel(BaseModel):
         self.save_network(self.netD_A, 'D_A', label, self.gpu_ids)
         self.save_network(self.netG_B, 'G_B', label, self.gpu_ids)
         self.save_network(self.netD_B, 'D_B', label, self.gpu_ids)
+        self.save_network(self.netG_seg, 'Seg_A', label, self.gpu_ids)
 
     def update_learning_rate(self):
         lrd = self.opt.lr / self.opt.niter_decay

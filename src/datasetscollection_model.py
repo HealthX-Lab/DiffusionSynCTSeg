@@ -6,7 +6,7 @@ import os
 class DatasetsCollection:
     def __init__(self,  opt):
         self.directory = opt.dataroot
-        self.operation = opt.operation
+        self.operation = opt.operation if opt.operation != "check_image" else "Train"
         self.attributes = opt.attributes[self.operation]
         self.data_dic = []
         self.names = [name for name in self.attributes if self.attributes[name]['flag']]
@@ -38,8 +38,7 @@ class DatasetsCollection:
             for i in range (0,len (self.image_folder_path[dataset_name])):
                 type = self.types[dataset_name][i]
                 for file in sorted(os.listdir(self.image_folder_path[dataset_name][i])):
-                     # print(dataset_name, type, file)
-                     self.path_to_images[dataset_name][type].append(file)
+                     self.path_to_images[dataset_name][type].append(os.path.join(self.image_folder_path[dataset_name][i],file))
 
 
 
@@ -72,10 +71,8 @@ class DatasetsCollection:
                 if i == min_len:
                     i = 0
                 self.data_dic.append({'MRI': self.path_per_modality['MRI'][j], 'label': self.path_per_modality['label'][j],
-                                 'CT': self.path_per_modality['CT'][i]})
+                                       'CT': self.path_per_modality['CT'][i]})
                 i += 1
-
-
 
 
 

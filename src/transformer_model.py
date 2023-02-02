@@ -1,32 +1,28 @@
 
-import monai.transforms
-from monai import *
-# (
-#     Transform,
-#     AsDiscrete,
-#     AsDiscreted,
-#     EnsureChannelFirstd,
-#     Compose,
-#     CropForegroundd,
-#     LoadImaged,
-#     Orientationd,
-#     RandCropByPosNegLabeld,
-#     ScaleIntensityRanged,
-#     Spacingd,
-#     EnsureTyped,
-#     EnsureType,
-#     Invertd,
-#     MapTransform,
-#     Randomizable,
-# )
+# import monai.transforms
+from monai.transforms import (
+    AsDiscrete,
+    AsDiscreted,
+    EnsureChannelFirstd,
+    Compose,
+    CropForegroundd,
+    LoadImaged,
+    Orientationd,
+    RandCropByLabelClassesd,
+    ScaleIntensityRanged,
+    Spacingd,
+    EnsureTyped,
+    EnsureType,
+    Invertd,
+)
 
 class MyTransformer:
-    def __init__(self, opt):
-        self.operation = opt.operation
+    def __init__(self, opt,operation):
+        self.operation = operation
         self.transformers = opt.transformers[self.operation]
         self.data_transformer_list = []
         self.compose_transformer()
-        self.data_transforms = monai.transforms.Compose(self.data_transformer_list)
+        self.data_transforms = Compose(self.data_transformer_list)
 
     def compose_transformer(self):
 

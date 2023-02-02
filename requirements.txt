@@ -1,5 +1,5 @@
-gin
-ants
+
+# ants
 numpy
 nibabel
 matplotlib
