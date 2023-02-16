@@ -28,7 +28,6 @@ class CycleSEGModel(BaseModel):
 
     def initialize(self, opt):
         self.opt = opt
-        print('first of init',flush=True)
         BaseModel.initialize(self, opt)
         self.list_networks = []
         self.list_networks_name = []
@@ -90,7 +89,7 @@ class CycleSEGModel(BaseModel):
             #     self.lr_discriminator_B = lr_scheduler_discriminator_obj(self.optimizer_D_B,
             #                                                         **opt.lr_scheduler_discriminator['arg'])
 
-        print('end of init',flush=True)
+
 
 
 
@@ -103,9 +102,7 @@ class CycleSEGModel(BaseModel):
         self.real_B = input['CT'].to(self.opt.device)
         self.real_Seg = input['label'].to(self.opt.device)
         self.real_Seg  = one_hot(self.real_Seg , num_classes=self.opt.num_classes, dim=1)
-        # print('realA',np.shape(self.real_A), flush=True)
-        # print('realB',np.shape(self.real_B), flush=True)
-        # print('real seg',np.shape(self.real_Seg), flush=True)
+
 
     def get_networks(self):
         return self.list_networks
@@ -141,15 +138,9 @@ class CycleSEGModel(BaseModel):
         return loss_D
 
     def backward_D_A(self):
-        print("before pool *****************", flush=True)
-        # fake_B = self.fake_B_pool.query(self.fake_B)
-        print(np.shape(self.fake_B))
-        print("after pool ******************", flush=True)
         self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, self.fake_B)
-        print("after netD_A *****************", flush=True)
 
     def backward_D_B(self):
-        # fake_A = self.fake_A_pool.query(self.fake_A)
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, self.fake_A)
 
     def backward_G(self):
@@ -173,20 +164,20 @@ class CycleSEGModel(BaseModel):
         self.fake_B = self.netG_A.forward(self.real_A)
         pred_fake = self.netD_A.forward(self.fake_B)
         self.loss_G_A = self.criterionGAN(pred_fake, True)
-        print('*****  loss G_A  in G**', np.shape(self.loss_G_A))
+
         # D_B(G_B(B))
         self.fake_A = self.netG_B.forward(self.real_B)
         pred_fake = self.netD_B.forward(self.fake_A)
         self.loss_G_B = self.criterionGAN(pred_fake, True)
-        print('*****  loss G_B  in G**', np.shape(self.loss_G_B))
+
         # Forward cycle loss
         self.rec_A = self.netG_B.forward(self.fake_B)
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
-        print('*****  loss_cycle_A  in G**', np.shape(self.loss_cycle_A))
+
         # Backward cycle loss
         self.rec_B = self.netG_A.forward(self.fake_A)
         self.loss_cycle_B = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
-        print('*****  loss_cycle_B  in G**', np.shape(self.loss_cycle_B))
+
         # Segmentation loss
         self.seg_fake_B = self.netG_seg.forward(self.fake_B)
         if self.opt.seg_norm == 'DiceNorm':
@@ -202,11 +193,11 @@ class CycleSEGModel(BaseModel):
 
     def optimize_parameters(self):
         # G_A and G_B
-        print('before G ******')
+
         self.optimizer_G.zero_grad()
         self.backward_G()
         self.optimizer_G.step()
-        print('afterG ******')
+
         # if opt.lr_enable:
         #     self.lr_GAN.step()
         # D_A
@@ -223,11 +214,6 @@ class CycleSEGModel(BaseModel):
         #     self.lr_discriminator_B.step()
 
     def get_current_errors(self):
-        print('*****  loss D_A  **',np.shape(self.loss_D_A))
-        print('*****  loss D_B  **', np.shape(self.loss_D_B))
-        print('*****  loss G_A  **', np.shape(self.loss_G_A))
-        print('*****  loss G_B  **', np.shape(self.loss_G_B))
-        print('*****  loss seg_B  **', np.shape(self.loss_seg))
         D_A = self.loss_D_A.item()
         G_A = self.loss_G_A.item()
         Cyc_A = self.loss_cycle_A.item()
@@ -272,15 +258,3 @@ class CycleSEGModel(BaseModel):
         self.save_network(self.netD_B, 'D_B', label)
         self.save_network(self.netG_seg, 'Seg_A', label)
 
-    # def update_learning_rate(self):
-    #     lrd = self.opt.lr / self.opt.niter_decay
-    #     lr = self.old_lr - lrd
-    #     for param_group in self.optimizer_D_A.param_groups:
-    #         param_group['lr'] = lr
-    #     for param_group in self.optimizer_D_B.param_groups:
-    #         param_group['lr'] = lr
-    #     for param_group in self.optimizer_G.param_groups:
-    #         param_group['lr'] = lr
-    #
-    #     print('update learning rate: %f -> %f' % (self.old_lr, lr))
-    #     self.old_lr = lr

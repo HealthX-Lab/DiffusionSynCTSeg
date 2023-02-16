@@ -154,13 +154,9 @@ class CustomDiscriminator(Discriminator):
         self.final_act = nn.Sigmoid()
 
     def forward(self, x):
-        print('****final D input*****', np.shape(x))
         x = super(Discriminator, self).forward(x)
-        print('****final D outout*****',np.shape(x))
-        # x = Discriminator.forward(x)
         x = self.final_conv(x)
         x = self.final_act(x)
-        print('****final D outout act*****', np.shape(x))
         return x
 
 def define_D(opt):
@@ -221,9 +217,6 @@ class GANLoss(nn.Module):
         return target_tensor
 
     def __call__(self, input, target_is_real):
-        print('**** GAN LOSS input', np.shape(input))
         target_tensor = self.get_target_tensor(input, target_is_real)
-        print('**** GAN LOSS target_tensor', np.shape(target_tensor))
-        print('**** GAN LOSS target_tensor val ', self.loss(input, target_tensor),np.shape(self.loss(input, target_tensor)))
         return self.loss(input, target_tensor)
 

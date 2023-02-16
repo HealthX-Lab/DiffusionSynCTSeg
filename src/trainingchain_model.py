@@ -125,14 +125,13 @@ class TrainingChain:
                 start = time.strftime
                 total_steps += self.option.batch_size
                 epoch_iter += self.option.batch_size
-                print('before set input ', flush=True)
+
 
                 self.visualizer.log_model(f"epoch iteration {epoch_iter}/{len(self.train_loader)}  "
                                           f"in epoch {epoch+1}   "
                                           f"start time: {start}\n")
 
                 self.model.set_input(data)
-                print('model input set finished', flush=True)
                 self.model.optimize_parameters()
 
                 errors = self.model.get_current_errors()
