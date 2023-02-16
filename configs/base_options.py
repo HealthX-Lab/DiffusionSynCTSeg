@@ -17,14 +17,16 @@ class BaseOptions():
 
         # ------------------------- 02- General Model ------------------------
         self.parser.add_argument('--model_type', type=str, default='GAN', help='Choose between GAN, ')
-        # self.parser.add_argument('--model', type=str, default='cycle_gan',
-        #                          help='chooses which model to use. cycle_gan, pix2pix, test')
+        self.parser.add_argument('--max_epochs', type=int, default=100, help='# of epochs ')
+        self.parser.add_argument('--num_classes', type=int, default=4, help='# of output classes')
+        self.parser.add_argument('--ConfusionMatrixMetric', type=tuple, default=(
+                "sensitivity", "precision", "recall", 'specificity'), help='Confusion Matrix Metric')
         self.parser.add_argument('--epoch_count', type=int, default=1,
                                  help='the starting epoch count, we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>, ...')
-        self.parser.add_argument('--niter', type=int, default=100,
-                                 help='# of iter at starting learning rate')
-        self.parser.add_argument('--niter_decay', type=int, default=100,
-                                 help='# of iter to linearly decay learning rate to zero')
+        # self.parser.add_argument('--niter', type=int, default=100,
+        #                          help='# of iter at starting learning rate')
+        # self.parser.add_argument('--niter_decay', type=int, default=100,
+        #                          help='# of iter to linearly decay learning rate to zero')
         self.parser.add_argument('--print_freq', type=int, default=100,
                                  help='frequency of showing training results on console')
         self.parser.add_argument('--val_interval', type=int, default=1)
@@ -32,15 +34,26 @@ class BaseOptions():
         self.parser.add_argument('--fineSize', type=int, default=64, help='then crop to this size')
         self.parser.add_argument('--no_dropout', action='store_true', help='no dropout for the generator')
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
-        self.parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')
+        self.parser.add_argument('--lr', type=float, default=0.0002, help='initial learning rate for adam')#************************************************0.9
         self.parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')
         self.parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')
         self.parser.add_argument('--identity', type=float, default=0.0,
                                  help='use identity mapping. Setting identity other than 1 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set optidentity = 0.1')
-
+        self.parser.add_argument('--lr_enable', type=bool, default=False, help='enabeling lr flag')
+        self.parser.add_argument('--lr_scheduler_GAN', type=dict,
+                                         default={'cls': 'StepLR', 'arg': {'step_size': 30,'gamma':0.1}})
+        self.parser.add_argument('--lr_scheduler_discriminator', type=dict,
+                                 default={'cls': 'StepLR', 'arg': {'step_size': 30, 'gamma': 0.1}})
+        self.parser.add_argument('--Gen_softmax', type=bool, default=True,
+                                 help='# using softmax in the last layer in generators')
+        self.parser.add_argument('--discriminator_sigmoid', type=bool, default=True,
+                                 help='# using sigmoid in the last layer in discriminator')
         # ------------------------- 03- GAN Model ------------------------
         # self.parser.add_argument('--input_nc', type=int, default=3, help='# of input image channels')
         # self.parser.add_argument('--output_nc', type=int, default=3, help='# of output image channels')
+        self.parser.add_argument('--seg_norm', type=str, default='DiceNorm', help='DiceNorm or CrossEntropy')
+        self.parser.add_argument('--no_lsgan', action='store_true',
+                                 help='do *not* use least square GAN, if false, use vanilla GAN')
         self.parser.add_argument('--which_model_netD', type=str, default='basic', help='selects model to use for netD')
         self.parser.add_argument('--which_model_netG', type=str, default='SegResNet',
                                  help='selects model to use for netG between SegResNet, SegResNetVAE, UNet, SwinUNETR')
@@ -68,7 +81,7 @@ class BaseOptions():
                                         "spatial_dims":3,
                                         "init_filters":8,
                                         "in_channels":1,
-                                        "out_channels":3,
+                                        "out_channels":1,
                                         "dropout_prob":None,
                                         "act":('RELU', {'inplace': True}),
                                         # "norm":('GROUP', {'num_groups': 8}),
@@ -97,7 +110,7 @@ class BaseOptions():
                                  default={"spatial_dims": 3,
                                           "init_filters": 8,
                                           "in_channels": 1,
-                                          "out_channels": 2,
+                                          "out_channels": 1,
                                           "dropout_prob":0.2,
                                           # "norm": ('GROUP', {'num_groups': 8}),
                                           # "norm_name": '',
@@ -108,29 +121,33 @@ class BaseOptions():
                                           # "upsample_mode": UpsampleMode.NONTRAINABLE,
                                           })
 
-        self.parser.add_argument('--Discriminator_basic_meatdata', type=dict,
-                                 default={"in_shape": 3,
-                                          "channels": 1,
-                                          "strides": 2,
-                                          "kernel_size": (16, 32, 64, 128, 256),
-                                          "num_res_units ": (2, 2, 2, 2),
+        self.parser.add_argument('--Discriminator_basic_metadata', type=dict,
+                                 default={"in_shape": (1,64,64,64),
+                                          "channels": (8, 16, 32, 64),
+                                          "strides": (2, 2, 2 ),
+                                          "kernel_size": 5,
+                                          "num_res_units": 1,
                                           "act": 'PRELU',
                                           "norm": 'INSTANCE',
-                                          "dropout ": 0.2,
+                                          "dropout": 0.2,
                                           "bias": True,
                                           "last_act": 'SIGMOID',
                                           })
 
         self.parser.add_argument('--ngf', type=int, default=64, help='# of gen filters in first conv layer')
         self.parser.add_argument('--ndf', type=int, default=64, help='# of discrim filters in first conv layer')
+        self.parser.add_argument('--cross_entropy_weight', type=list, default=[1,1,1,1], help='cross entropy weights for segmentation')
+        self.parser.add_argument('--Gen_dropout', type=float, default=0.2,
+                                 help='# drop out in last layer in generator model')
         # self.parser.add_argument('--n_layers_D', type=int, default=3, help='only used if which_model_netD==n_layers')
         # ------------------------- 04- Seg Model ------------------------
         self.parser.add_argument('--which_model_netG_seg', type=str, default='SegResNet',
                                  help='selects model to use for netG between SegResNet, SegResNetVAE, UNet, SwinUNETR')
+        self.parser.add_argument('--seg_dropout', type=float, default=0.2, help='# drop out in last layer in segmentation model')
         self.parser.add_argument('--UNet_SEG_meatdata', type=dict,
                                  default={"spatial_dims": 3,
                                           "in_channels": 1,
-                                          "out_channels": 3,
+                                          "out_channels": 4,
                                           "channels": (16, 32, 64, 128, 256),
                                           "strides": (2, 2, 2, 2),
                                           "kernel_size": 3,
@@ -151,7 +168,7 @@ class BaseOptions():
                                           "spatial_dims": 3,
                                           "init_filters": 8,
                                           "in_channels": 1,
-                                          "out_channels": 3,
+                                          "out_channels": 4,
                                           "dropout_prob": None,
                                           "act": ('RELU', {'inplace': True}),
                                           # "norm": ('GROUP', {'num_groups': 8}),
@@ -163,7 +180,7 @@ class BaseOptions():
         self.parser.add_argument('--SwinUNETR_SEG_meatdata', type=dict,
                                  default={"img_size": (64, 64, 64),
                                           "in_channels": 1,
-                                          "out_channels": 3,
+                                          "out_channels": 4,
                                           "depths": (2, 2, 2, 2),
                                           "num_heads": (3, 6, 12, 24),
                                           "feature_size": 24,
@@ -180,7 +197,7 @@ class BaseOptions():
                                  default={"spatial_dims": 3,
                                           "init_filters": 8,
                                           "in_channels": 1,
-                                          "out_channels": 2,
+                                          "out_channels": 4,
                                           "dropout_prob": 0.2,
                                           # "norm": ('GROUP', {'num_groups': 8}),
                                           "norm_name": '',
@@ -192,6 +209,8 @@ class BaseOptions():
                                           })
         # ------------------------- 05- Dataset ------------------------
         self.parser.add_argument('--dataroot', type=str, default='/home/rtm/projects/rrg-eugenium/rtm/final_dataset')
+        self.parser.add_argument('--pool_size', type=int, default=50,
+                                 help='the size of image buffer that stores previously generated images')
         self.parser.add_argument('--val_rate', type=int, default=0.2)
         self.parser.add_argument('--attributes', type=dict,
                                  default={'Train':
@@ -245,6 +264,8 @@ class BaseOptions():
         self.parser.add_argument('--cache_rate', type=float, default=1.0)
         self.parser.add_argument('--dataLoader_num_workers', type=int, default=1)
         self.parser.add_argument('--batch_size', type=int, default=1)
+        self.parser.add_argument('--roi_size', type = tuple, default=(64, 64, 64))
+        self.parser.add_argument('--sw_batch_size', type=int, default=4)
         self.parser.add_argument('--transformers', type=dict,
                                  default= {'Train':
                                                 [
@@ -257,14 +278,14 @@ class BaseOptions():
                                                         'label_key': "label",
                                                         'spatial_size': (64, 64, 64),
                                                         'num_samples': 1,
-                                                         "num_classes":3,
+                                                         "num_classes":4,
                                                         }
                                                  },
-                                                {'cls': 'AsDiscreted',
-                                                 'arg': {'keys': ['label'],
-                                                         'to_onehot':3,
-                                                         }
-                                                }
+                                                # {'cls': 'AsDiscreted',
+                                                #  'arg': {'keys': ['label'],
+                                                #          'to_onehot':4,
+                                                #          }
+                                                # }
                                                 ],
                                            'val':
                                                [
@@ -272,19 +293,19 @@ class BaseOptions():
                                                     'arg': {'keys': ['CT', 'MRI', 'label']}},
                                                    {'cls': 'EnsureChannelFirstd',
                                                     'arg': {'keys': ['CT', 'MRI', 'label']}},
-                                                   # {'cls': 'RandCropByLabelClassesd',
-                                                   #  'arg': {'keys': ['CT', 'MRI', 'label'],
-                                                   #          'label_key': "label",
-                                                   #          'spatial_size': (64, 64, 64),
-                                                   #          'num_samples': 1,
-                                                   #          "num_classes": 3,
-                                                   #          }
-                                                   #  },
+                                                   {'cls': 'RandCropByLabelClassesd',
+                                                    'arg': {'keys': ['CT', 'MRI', 'label'],
+                                                            'label_key': "label",
+                                                            'spatial_size': (64, 64, 64),
+                                                            'num_samples': 1,
+                                                            "num_classes": 4,
+                                                            }
+                                                    },
                                                    # {'cls': 'AsDiscreted',
                                                    #  'arg': {'keys': ['label'],
-                                                   #          'to_onehot': 3,
+                                                   #          'to_onehot': 4,
                                                    #          }
-                                                   #  }
+                                                   #  },
                                                ],
                                           'Test':
                                                 [
@@ -299,21 +320,31 @@ class BaseOptions():
                                                            'num_samples': 1,
                                                            }
                                                    },
-                                                  {'cls': 'AsDiscreted',
-                                                   'arg': {'keys': ['label'],
-                                                           'to_onehot': 3,
-                                                           }
-                                                   }
+                                                  # {'cls': 'AsDiscreted',
+                                                  #  'arg': {'keys': ['label'],
+                                                  #          'to_onehot': 4,
+                                                  #          }
+                                                  #  }
                                               ],
                                          })
 
-        # ------------------------- 06- Login  ------------------------
+        # ------------------------- 06- Log  ------------------------
         self.parser.add_argument('--val_template_save_path', type=str, default='./save_images/val_template.png')
         self.parser.add_argument('--name', type=str, default='experiment_name',
                                  help='name of the experiment. It decides where to store samples and models')
-        self.parser.add_argument('--checkpoints_dir', type=str, default='./checkpoints', help='models are saved here')
+        self.parser.add_argument('--checkpoints_dir', type=str, default='checkpoints', help='models are saved here')
+        self.parser.add_argument('--logs_dir', type=str, default='logs',
+                                 help='models are saved here')
+        self.parser.add_argument('--test_iamge_dir', type=str, default='test_images',
+                                 help='test images are saved here')
+        self.parser.add_argument('--metrics_image_dir', type=str, default='metrics_images',
+                                 help='metricsimages are saved here')
+        self.parser.add_argument('--save_slices', type=list, default=[50,70,90],
+                                 help='image slices that are going to save')
 
     def parse(self):
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.parser.add_argument('--device',  default=device)
 
         self.opt = self.parser.parse_args()
         args = vars(self.opt)
