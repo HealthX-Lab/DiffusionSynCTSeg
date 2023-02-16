@@ -5,7 +5,7 @@ import functools
 from torch.autograd import Variable
 import numpy as np
 
-
+from monai.networks import normal_init
 from monai.networks.nets import SwinUNETR
 from monai.networks.nets import UNet
 from monai.networks.nets import SegResNet, SegResNetVAE
@@ -15,30 +15,109 @@ from monai.networks.nets import Discriminator
 ###############################################################################
 
 
-def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
-        m.weight.data.normal_(0.0, 0.02)
-        if hasattr(m.bias, 'data'):
-            m.bias.data.fill_(0)
-    elif classname.find('Norm') != -1:
-        m.weight.data.normal_(1.0, 0.02)
-        m.bias.data.fill_(0)
+def weights_init(net, init_type='normal', gain=0.02):
+    def init_func(m):
+        classname = m.__class__.__name__
+        if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
+            if init_type == 'normal':
+                init.normal_(m.weight.data, 0.0, gain)
+            elif init_type == 'xavier':
+                init.xavier_normal_(m.weight.data, gain=gain)
+            elif init_type == 'kaiming':
+                init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
+            elif init_type == 'orthogonal':
+                init.orthogonal_(m.weight.data, gain=gain)
+            else:
+                raise NotImplementedError('initialization method [%s] is not implemented' % init_type)
+            if hasattr(m, 'bias') and m.bias is not None:
+                init.constant_(m.bias.data, 0.0)
+        elif classname.find('BatchNorm3d') != -1:
+            init.normal_(m.weight.data, 1.0, gain)
+            init.constant_(m.bias.data, 0.0)
 
+    print('initialize network with %s' % init_type)
+    net.apply(init_func)
 
-# def get_norm_layer(norm_type='instance'):
-#     if norm_type == 'batch':
-#         norm_layer = functools.partial(nn.BatchNorm2d, affine=True)
-#     elif norm_type == 'instance':
-#         norm_layer = functools.partial(nn.InstanceNorm2d, affine=False)
+# class CustomSegResNet(SegResNet):
+#     def __init__(self,attributes):
+#         super().__init__(**attributes)
+#         out_channel = attributes["out_channels"]
+#         self.dropout = nn.Dropout(p=opt.Gen_dropout)
+#         self.final_conv = nn.Conv3d(out_channel, out_channel, 1, bias=False)
+#         self.final_act = nn.Softmax()
+#
+#     def forward(self, x):
+#         x = super(SegResNet, self).forward(x)
+#         x = self.final_conv(x)
+#         x = self.dropout(x)
+#         x = self.final_act(x)
+#         return x
+
+# class CustomSegResNetVAE(SegResNetVAE):
+#     def __init__(self,attributes):
+#         super().__init__(**attributes)
+#         out_channel = attributes["out_channels"]
+#         self.dropout = nn.Dropout(p=opt.Gen_dropout)
+#         self.final_conv = nn.Conv3d(out_channel, out_channel, 1 ,bias=False)
+#         self.final_act = nn.Softmax()
+#
+#     def forward(self, x):
+#         x = super(SegResNetVAE, self).forward(x)
+#         x = self.final_conv(x)
+#         x = self.dropout(x)
+#         x = self.final_act(x)
+#         return x
+
+# class CustomUNet(UNet):
+#     def __init__(self,attributes):
+#         super().__init__(**attributes)
+#         out_channel = attributes["out_channels"]
+#         self.dropout = nn.Dropout(p=opt.Gen_dropout)
+#         self.final_conv = nn.Conv3d(out_channel, out_channel, 1 ,bias=False)
+#         self.final_act = nn.Softmax()
+#
+#     def forward(self, x):
+#         x = super(UNet, self).forward(x)
+#         x = self.final_conv(x)
+#         x = self.dropout(x)
+#         x = self.final_act(x)
+#         return x
+
+# def define_G(opt,seg_net=False):
+#     netG = None
+#     which_model_netG = opt.which_model_netG if not seg_net else which_model_netG_seg
+#
+#     if which_model_netG == 'SegResNetVAE':
+#         if not seg_net:
+#             netG = CustomSegResNetVAE(**opt.SegResNetVAE_meatdata)
+#         else:
+#             netG = CustomSegResNetVAE(**opt.SegResNetVAE_SEG_meatdata)
+#     elif which_model_netG == 'SegResNet':
+#         if not seg_net:
+#             netG = CustomSegResNet(**opt.SegResNet_meatdata)
+#         else:
+#             netG = CustomSegResNet(**opt.SegResNet_SEG_meatdata)
+#     elif which_model_netG == 'UNet':
+#         if not seg_net:
+#             netG = CustomUNet(**opt.UNet_meatdata)
+#         else:
+#             netG = CustomUNet(**opt.UNet_SEG_meatdata)
+#     elif which_model_netG == 'SwinUNETR':
+#         if not seg_net:
+#             netG = CustomSwinUNETR(**opt.SwinUNETR_meatdata)
+#         else:
+#             netG = CustomSwinUNETR(**opt.SwinUNETR_SEG_meatdata)
 #     else:
-#         raise NotImplementedError('normalization layer [%s] is not found' % norm)
-#     return norm_layer
+#         raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
+#
+#     netG = netG.to(opt.device)
+#     netG.apply(normal_init)
+#     return netG
 
 
 def define_G(opt,seg_net=False):
     netG = None
-    which_model_netG = opt.which_model_netG
+    which_model_netG = opt.which_model_netG if not seg_net else opt.which_model_netG_seg
 
     if which_model_netG == 'SegResNetVAE':
         if not seg_net:
@@ -63,20 +142,34 @@ def define_G(opt,seg_net=False):
     else:
         raise NotImplementedError('Generator model name [%s] is not recognized' % which_model_netG)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    netG = netG.to(device)
-    netG.apply(weights_init)
+    netG = netG.to(opt.device)
+    netG.apply(normal_init)
     return netG
 
+
+class CustomDiscriminator(Discriminator):
+    def __init__(self,opt):
+        super().__init__(**opt.Discriminator_basic_metadata)
+        self.final_conv = nn.Conv1d(1, 1, 1, bias=False)
+        self.final_act = nn.Sigmoid()
+
+    def forward(self, x):
+        print('****final D input*****', np.shape(x))
+        x = super(Discriminator, self).forward(x)
+        print('****final D outout*****',np.shape(x))
+        # x = Discriminator.forward(x)
+        x = self.final_conv(x)
+        x = self.final_act(x)
+        print('****final D outout act*****', np.shape(x))
+        return x
 
 def define_D(opt):
     netD = None
     which_model_netD = opt.which_model_netD
     if which_model_netD == 'basic':
-        netD = Discriminator(**opt.Discriminator_basic_meatdata)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    netD = netD.to(device)
-    netD.apply(weights_init)
+        netD = CustomDiscriminator(opt)
+    netD = netD.to(opt.device)
+    netD.apply(normal_init)
     return netD
 
 
@@ -117,19 +210,20 @@ class GANLoss(nn.Module):
             create_label = ((self.real_label_var is None) or
                             (self.real_label_var.numel() != input.numel()))
             if create_label:
-                real_tensor = self.Tensor(input.size()).fill_(self.real_label)
-                self.real_label_var = Variable(real_tensor, requires_grad=False)
+                self.real_label_var = torch.ones_like(input)
             target_tensor = self.real_label_var
         else:
             create_label = ((self.fake_label_var is None) or
                             (self.fake_label_var.numel() != input.numel()))
             if create_label:
-                fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
-                self.fake_label_var = Variable(fake_tensor, requires_grad=False)
+                self.fake_label_var = torch.zeros_like(input)
             target_tensor = self.fake_label_var
         return target_tensor
 
     def __call__(self, input, target_is_real):
+        print('**** GAN LOSS input', np.shape(input))
         target_tensor = self.get_target_tensor(input, target_is_real)
+        print('**** GAN LOSS target_tensor', np.shape(target_tensor))
+        print('**** GAN LOSS target_tensor val ', self.loss(input, target_tensor),np.shape(self.loss(input, target_tensor)))
         return self.loss(input, target_tensor)
 
