@@ -10,6 +10,7 @@ from src.image_functions import *
 
 
 
+
 def main():
     opt = BaseOptions().parse()
     operation = opt.operation
@@ -31,11 +32,12 @@ def main():
 
     elif operation == 'Test':
         datasets = DatasetsCollection(opt)
-        datasets.over_samples() if opt.oversample else datasets.under_samples()
+        datasets.test_samples()
         paths = datasets.get_data_dics()
-        training_chain = TestChain(opt, paths)
-        val_data = training_chain.get_val_data()
-        save_image(opt,val_data)
+        test_chain = TestChain(opt, paths)
+        test_chain.build_chain()
+
+
 
 
     # elif operation == 'Test' or  operation == 'TestSegMRI' or operation ==  'TestMRI2CT' :

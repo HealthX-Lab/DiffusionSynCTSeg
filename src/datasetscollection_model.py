@@ -82,6 +82,10 @@ class DatasetsCollection:
         for i in range (0,min_len):
              self.data_dic.append({'MRI':self.path_per_modality['MRI'][i],'label':self.path_per_modality['label'][i], 'CT':self.path_per_modality['CT'][i]})
 
+    def test_samples(self):
+        for i in range (0,len(self.path_per_modality['CT'])):
+             self.data_dic.append({'label':self.path_per_modality['label'][i], 'CT':self.path_per_modality['CT'][i]})
+
 
     def paired_samples(self):
 

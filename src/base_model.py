@@ -13,12 +13,13 @@ class BaseModel():
         self.save_dir = os.path.join('results', self.opt.name, self.opt.checkpoints_dir)
         os.makedirs(self.save_dir, exist_ok=True)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.loss_seg_function = ''
         if self.opt.seg_norm == 'DiceNorm':
-            self.dice_loss_seg = DiceLoss()
+            self.loss_seg_function = DiceLoss()
         elif self.opt.seg_norm == 'CrossEntropy':
-            self.CE_loss_seg = nn.CrossEntropyLoss(weight=opt.cross_entropy_weight)
+            self.loss_seg_function = nn.CrossEntropyLoss(weight=opt.cross_entropy_weight)
         elif self.opt.seg_norm == 'DiceCELoss':
-            self.DiceCELoss_seg = DiceCELoss(softmax=True)
+            self.loss_seg_function = DiceCELoss(softmax=True)
 
     def set_input(self, input):
         self.input = input
@@ -56,7 +57,7 @@ class BaseModel():
 
     # helper loading function that can be used by subclasses
     def load_network(self, network, network_label, epoch_label):
-        save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
+        save_filename = f'epoch_{epoch_label}_net_{network_label}.pth'
         save_path = os.path.join(self.save_dir, save_filename)
         network.load_state_dict(torch.load(save_path))
 

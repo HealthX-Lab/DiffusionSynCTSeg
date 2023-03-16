@@ -15,7 +15,7 @@ from monai.transforms import (
     EnsureType,
     Invertd,
 )
-
+from src.ConvertToMultiChannel import ConvertToMultiChannelVentricleClasses
 class MyTransformer:
     def __init__(self, opt,operation):
         self.operation = operation

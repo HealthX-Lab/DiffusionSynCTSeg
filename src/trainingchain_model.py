@@ -14,14 +14,15 @@ from util.visualizer import Visualizer
 from monai.metrics import DiceMetric,ConfusionMatrixMetric
 import math
 from numpy import inf
-
+import nibabel as nib
+import numpy as np
 
 # from src2.model import Model
 class TrainingChain:
     def __init__(self, opt, paths):
         self.data_dicts_train = []
         self.data_dicts_val = []
-        self.data_paths = paths
+        self.data_paths = paths[:10]
         self.option = opt
         self.train_data, self.val_data = self.seprate_train_val()
         self.visualizer = Visualizer(self.option)
@@ -32,8 +33,8 @@ class TrainingChain:
                                                  metric_name=self.option.ConfusionMatrixMetric)
 
         self.confusion_matrix_list = {i: [] for i in self.option.ConfusionMatrixMetric}
-        image_types = [ 'fake_B', 'rec_A', 'idt_B','seg_B',
-                     'fake_A', 'rec_B', 'idt_A', 'real_seg']
+        image_types = [ 'fake_A','rec_A', 'idt_A',
+                        'fake_B', 'rec_B', 'idt_B', 'seg_B']
 
         self.best_metric = -1
         self.best_metric_epoch = 0 # based on val data
@@ -42,12 +43,8 @@ class TrainingChain:
         self.metric_list_train = {image_name:{i: [] for i in self.option.ConfusionMatrixMetric} for image_name in image_types}  # list of metrics in end of each train epoch
 
 
-        self.metric_list_val = {image_name:{i: [] for i in self.option.ConfusionMatrixMetric} for image_name in image_types}
-        self.dice_metric_val = {image_name:[] for image_name in image_types}
-
-
-
-
+        self.metric_list_val = {'seg_B':{i: [] for i in self.option.ConfusionMatrixMetric}}
+        self.dice_val = {'seg_B':[] }
 
 
 
@@ -75,34 +72,41 @@ class TrainingChain:
     def get_train_data(self):
         return self.train_data
 
+    def visualize_images(self,output_images,epoch):
+        pred_seg_cpu = output_images['seg_B'].cpu().numpy()[0, 0].transpose((1, 0, 2))
+        real_seg_cpu = output_images['real_seg'].cpu().numpy()[0, 0].transpose((1, 0, 2))
+        print('pred_seg_cpu',np.shape(pred_seg_cpu))
+        print('real_seg_cpu', np.shape(real_seg_cpu))
+        self.visualizer.save_images(pred_seg_cpu, f'pred_seg_val_epoch_{epoch}', label=True)
+        self.visualizer.save_images(real_seg_cpu, f'real_seg_val_epoch_{epoch}', label=True)
+
+
+
     def eval_model(self,epoch):
         self.model.eval()
         with torch.no_grad():
             for val_data in self.val_loader:
                 self.model.set_input(val_data)
                 self.model.evaluation_step()
-                outputs = self.model.get_current_visuals()
+                errors = self.model.get_current_errors(is_train=False)
+                output_images = self.model.get_current_visuals()
 
-                self.metric_list_val = calculate_conf_matrix_based_on_image(self,self.metric_list_val, outputs)
-                self.dice_metric_val = calculate_dice_metric_based_on_image(self, self.dice_metric_val, outputs)
+                self.calculate_metrics(output_images)
 
-                self.dice_metric.reset()
-                self.confusion_matrix.reset()
 
-        sum_conf_matrix_val = self.sum_metrics(self.metric_list_val)
-        sum_dice_loss_val = self.sum_loss(self.dice_metric_val)
-        sum_over_images = sum(sum_dice_loss_val.values())
-
+            self.aggrigate_metrics()
+            self.reset_metrics()
 
         # reset the status for next validation round
-        if sum_over_images < self.best_loss:
-            self.best_loss = sum_over_images
+        if self.dice_val['seg_B'][-1] < self.best_loss:
+            self.best_loss = self.dice_val['seg_B'][-1]
             self.visualizer.log_loss(
-                f"epoch {epoch + 1}/{self.option.max_epochs}\n"
-                f" dice loss {sum_dice_loss_val} and sum {sum_over_images}\n")
+                f"epoch {epoch}/{self.option.max_epochs}\n"
+                f" dice loss {self.best_loss} \n"
+                f"model errors {errors}")
             self.visualizer.log_model(
-                f"saving the best model (epoch {epoch + 1}"
-                f"with dice loss {sum_dice_loss_val}\n confusion matrix {sum_conf_matrix_val}")
+                f"saving the best model (epoch {epoch}"
+                f"with dice loss {self.best_loss}\n ")
             self.model.save(f'beast_dice_loss_{epoch}')
 
 
@@ -110,25 +114,26 @@ class TrainingChain:
         total_steps = 0
         best_loss = math.inf
         epoch_start_time = time.time()
+        epoch_start = 0 if self.option.continue_train == False \
+            else self.option.which_epoch
 
-        for epoch in range(self.option.max_epochs):
+        for epoch in range(epoch_start+1,self.option.max_epochs):
             self.visualizer.log_model("-" * 10)
             self.model.train()
-            self.visualizer.log_model(f"epoch {epoch + 1}/{self.option.max_epochs}\n")
+            self.visualizer.log_model(f"epoch {epoch}/{self.option.max_epochs}\n")
 
             epoch_iter = 0
-            errors = 0
-            mean_errors = 0
+
 
             for data in self.train_loader:
+
                 iter_start_time = time.time()
                 start = time.strftime
                 total_steps += self.option.batch_size
                 epoch_iter += self.option.batch_size
 
-
                 self.visualizer.log_model(f"epoch iteration {epoch_iter}/{len(self.train_loader)}  "
-                                          f"in epoch {epoch+1}   "
+                                          f"in epoch {epoch}   "
                                           f"start time: {start}\n")
 
                 self.model.set_input(data)
@@ -141,22 +146,22 @@ class TrainingChain:
 
                 if total_steps % self.option.print_freq == 0:
                     self.visualizer.log_loss(
-                        f"epoch {epoch + 1}/{self.option.max_epochs}\n"
+                        f"epoch {epoch}/{self.option.max_epochs}\n"
                         f" epoch iteration {epoch_iter}/{len(self.train_loader)} \n taken time for each epoch: {t}\n"
                         f" errors {errors}\n")
                     self.visualizer.log_model(
-                        f"saving the latest model (epoch {epoch + 1}, total_steps {total_steps})\n "
+                        f"saving the latest model (epoch {epoch}, total_steps {total_steps})\n "
                         f"with loss {errors}\n mean error {mean_errors}\n taken time for each epoch: {t}\n")
-                    self.model.save(f'iteration_{epoch_iter}_epoch_{epoch+1}')
+                    self.model.save(f'iteration_{epoch_iter}_epoch_{epoch}')
 
                 if mean_errors < best_loss:
                     best_loss = mean_errors
                     self.visualizer.log_loss(
-                        f"epoch {epoch + 1}/{self.option.max_epochs}\n"
+                        f"epoch {epoch}/{self.option.max_epochs}\n"
                         f" epoch iteration {epoch_iter}/{len(self.train_loader)} \n taken time for each epoch: {t}\n"
                         f" errors {errors}\n")
                     self.visualizer.log_model(
-                        f"saving the best model (epoch {epoch+1}, total_steps {total_steps})\n "
+                        f"saving the best model (epoch {epoch}, total_steps {total_steps})\n "
                         f"with loss {errors}\n mean error {mean_errors}")
                     self.model.save(f'beast_mean_error_{epoch}')
 
@@ -166,38 +171,40 @@ class TrainingChain:
                 f"with loss {errors}\n mean error {mean_errors}")
             self.model.save(f'epoch_{epoch}')
 
-            self.eval_model(epoch)
-            self.epoch_loss_train = self.append_epoch_loss(self.model.get_current_errors(),self.epoch_loss_train)
+            self.eval2_model(epoch)
+            self.epoch_loss_train = self.append_epoch_loss(self.model.get_current_errors(), self.epoch_loss_train)
 
         self.visualizer.log_model(f'End of epoch {epoch} Time Taken {time.time() - epoch_start_time}')
         self.visualize_metrics()
 
     def visualize_metrics(self):
 
-        for key, value in self.epoch_loss_train:
-            self.visualizer.plot_metrics(value,f"loss train for {key} model")
-        for key, value in self.metric_list_train :
-            for metric, metric_value in value:
-                self.visualizer.plot_metrics(metric_value,f"metric {metric} for {key} images in train")
-        for key, value in self.metric_list_val :
-            for metric, metric_value in value:
-                self.visualizer.plot_metrics(metric_value,f"metric {metric} for {key} images in val")
-        for key, value in self.metric_list_val :
-            self.visualizer.plot_metrics(value,f"dice loss for {key} images in val")
+        for model, value in self.epoch_loss_train.items():
+            self.visualizer.plot_metrics(value,f"loss_train_for_{model}_model")
+
+        # for image_name, value in self.metric_list_train.items() :
+        #     for metric, metric_value in value.items():
+        #         self.visualizer.plot_metrics(metric_value,f"metric_{metric}_for_{image_name}_images_in_train")
+
+        for image_name, value in self.metric_list_val.items() :
+            for metric, metric_value in value.items():
+                self.visualizer.plot_metrics(metric_value,f"metric_{metric}_for_{image_name}_images_in_val")
+
+        for image_name, value in self.dice_val.items() :
+            self.visualizer.plot_metrics(value,f"dice_loss_for_{image_name}_images_in_val")
 
     def build_chain(self):
         self.build_transformers()
         self.create_model()
         self.train_model()
 
-        self.visualizer.plot_metrics(self.epoch_loss)
-        self.visualizer.plot_metrics(self.confusion_matrix_list)
     def seprate_train_val(self):
         random.shuffle(self.data_paths)
         number_val = int(len(self.data_paths) * self.option.val_rate)
         val_data = self.data_paths[:number_val]
         train_data = self.data_paths[number_val:]
         return train_data, val_data
+
     def create_model(self):
         self.model = None
         if self.option.model_type == 'GAN':
@@ -205,66 +212,69 @@ class TrainingChain:
             self.model = CycleSEGModel()
 
         self.model.initialize(self.option)
-        self.epoch_loss_train = {i: [] for i in self.model.get_networks_name()}
+        self.epoch_loss_train = {i: [] for i in self.model.get_loss_name()}
         self.model.print_network(self.visualizer)
         self.visualizer.log_model(f"model {self.option.model_type} was created\n")
+
     def append_epoch_loss(self,loss_dic,target_dic):
-        for key, value in loss_dic:
+        for key, value in loss_dic.items():
             target_dic[key].append(value)
         return target_dic
-    def append_metric(self,metric_dict,conf_matrix):
-        for i in len(self.option.ConfusionMatrixMetric):
-            metric_dict[self.option.ConfusionMatrixMetric[i]].append(
-                conf_matrix.aggregate()[i].item())
-        return conf_matrix
+
+    def append_metric(self,metric_dict_image,conf_matrix):
+        for i in range(len(self.option.ConfusionMatrixMetric)):
+            metric_dict_image[self.option.ConfusionMatrixMetric[i]].append(
+                conf_matrix[i].item())
+        return metric_dict_image
+
+    def calculate_metrics(self,output_images):
+        self.confusion_matrix(y_pred=output_images['seg_B'], y=output_images['real_seg'])
+        self.dice_metric(y_pred=output_images['seg_B'], y=output_images['real_seg'])
+
+    def aggrigate_metrics(self):
+        rec_seg_conf_matrix = self.confusion_matrix.aggregate()
+        self.metric_list_val['seg_B'] = self.append_metric(self.metric_list_val['seg_B'],rec_seg_conf_matrix)
+
+        seg_B_dice_loss = self.dice_metric.aggregate().item()
+        self.dice_val['seg_B'].append(seg_B_dice_loss)
+
+    def reset_metrics(self):
+        self.dice_metric.reset()
+        self.confusion_matrix.reset()
+
+    def eval2_model(self,epoch):
+        self.model.eval()
+        with torch.no_grad():
+            for val_data in self.val_loader:
+                self.model.set_input(val_data)
+                self.model.evaluation2_step()
+
+                errors = self.model.get_current_errors(is_train=False)
+                output_images = self.model.get_current_visuals()
+                print('val_errors',errors)
+
+                self.calculate_metrics(output_images)
+                self.visualize_images(output_images,epoch)
 
 
-    def calculate_conf_matrix_based_on_image(self,metric_dict,output_images):
-        fake_A_matrix = self.confusion_matrix(y_pred=output_images['fake_A'], y=output_images['real_A'])
-        metric_dict['fake_A'] = append_metric(metric_dict['fake_A'],fake_A_matrix)
+            self.aggrigate_metrics()
+            self.reset_metrics()
 
-        fake_B_matrix = self.confusion_matrix(y_pred=output_images['fake_B'], y=output_images['real_B'])
-        metric_dict['fake_B'] = append_metric(metric_dict['fake_B'], fake_B_matrix)
+        # reset the status for next validation round
+        if self.dice_val['seg_B'][-1] < self.best_loss:
+            self.best_loss = self.dice_val['seg_B'][-1]
+            self.visualizer.log_loss(
+                f"epoch {epoch}/{self.option.max_epochs}\n"
+                f" dice loss {self.best_loss} \n"
+                f"model errors {errors}")
+            self.visualizer.log_model(
+                f"saving the best model (epoch {epoch}"
+                f"with dice loss {self.best_loss}\n ")
+            self.model.save(f'beast_dice_loss_{epoch}')
 
-        rec_A_matrix = self.confusion_matrix(y_pred=output_images['rec_A'], y=output_images['real_A'])
-        metric_dict['rec_A'] = append_metric(metric_dict['rec_A'], rec_A_matrix)
 
-        rec_B_matrix = self.confusion_matrix(y_pred=output_images['rec_B'], y=output_images['real_B'])
-        metric_dict['rec_B'] = append_metric(metric_dict['rec_B'], rec_B_matrix)
 
-        seg_B_matrix = self.confusion_matrix(y_pred=output_images['seg_B'], y=output_images['real_seg'])
-        metric_dict['seg_B'] = append_metric(metric_dict['seg_B'], seg_B_matrix)
-        return metric_dict
 
-    def calculate_dice_metric_based_on_image(self,dice_metric_dict,output_images):
-        fake_A_dice_loss = self.dice_metric(y_pred=output_images['fake_A'], y=output_images['real_A'])
-        dice_metric_dict['fake_A'].append(fake_A_dice_loss)
-
-        fake_B_dice_loss = self.dice_metric(y_pred=output_images['fake_B'], y=output_images['real_B'])
-        dice_metric_dict['fake_B'].append(fake_B_dice_loss)
-
-        rec_A_dice_loss = self.dice_metric(y_pred=output_images['rec_A'], y=output_images['real_A'])
-        dice_metric_dict['rec_A'].append(rec_A_dice_loss)
-
-        rec_B_dice_loss = self.dice_metric(y_pred=output_images['rec_B'], y=output_images['real_B'])
-        dice_metric_dict['rec_B'].append(rec_B_dice_loss)
-
-        seg_B_dice_loss = self.dice_metric(y_pred=output_images['seg_B'], y=output_images['real_seg'])
-        dice_metric_dict['seg_B'].append(seg_B_dice_loss)
-        return metric_dict
-
-    def sum_metrics(self, metrics_val):
-        result = dict.fromkeys(metrics_val, {})
-        for key, value in metrics_val:
-            metric = value.keys()
-            result[key][metric] = sum(value.values())
-        return result
-
-    def sum_loss(self, metrics_val):
-        result = dict.fromkeys(metrics_val, None)
-        for key, value in metrics_val:
-            result[key] = sum(value)
-        return result
 
 
 

@@ -10,13 +10,18 @@ import collections
 # Converts a Tensor into a Numpy array
 # |imtype|: the desired type of the converted numpy array
 def tensor2im(image_tensor, imtype=np.uint8):
+
+    print('image_tensor',np.shape(image_tensor))
     image_numpy = image_tensor[0].cpu().float().numpy()
-    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    print('image_numpy', np.shape(image_numpy))
+    image_numpy = (np.transpose(image_numpy, (1, 2, 3, 0)) + 1) / 2.0 * 255.0
     return image_numpy.astype(imtype)
 
 def tensor2seg(image_tensor, imtype=np.uint8):
+    print('image_tensor', np.shape(image_tensor))
     image_numpy = image_tensor[0].cpu().float().numpy()
-    image_numpy = np.transpose(image_numpy, (1, 2, 0)) *20
+    print('image_numpy', np.shape(image_numpy))
+    image_numpy = np.transpose(image_numpy, (1, 2, 3, 0)) *20
     return image_numpy.astype(imtype)
 
 def diagnose_network(net, name='network'):
