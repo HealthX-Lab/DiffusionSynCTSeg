@@ -97,9 +97,9 @@ class Visualizer():
             file.write(f"Summary of the  {label}: \n")
             print(net, file=file)
 
-    def save_images(self,img,tag,label):
+    def save_images(self, img, tag, label=False, epoch=0):
 
-        fig, axs = plt.subplots(1,len(self.opt.save_slices), figsize=(15, 5))
+        fig, axs = plt.subplots(1, len(self.opt.save_slices), figsize=(15, 5))
         for i in range(len(self.opt.save_slices)):
             n_slice = self.opt.save_slices[i]
             axs[i].set_title(f"{tag} image slice # {n_slice}")
@@ -108,7 +108,13 @@ class Visualizer():
             else:
                 axs[i].imshow(img[:, :, n_slice])
 
-        plt.savefig(os.path.join(self.img_dir, f"{tag}_image_slices_{self.opt.save_slices}.png"))
+        folder_path = os.path.join(self.img_dir, str(epoch))
+        if os.path.exists(folder_path):
+            print("Folder created successfully.")
+        else:
+            os.makedirs(folder_path, exist_ok=True)
+
+        plt.savefig(os.path.join(folder_path, f"{tag}_image_slices_{self.opt.save_slices}.png"))
         plt.close()
 
 

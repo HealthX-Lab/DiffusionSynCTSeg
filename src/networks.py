@@ -163,7 +163,8 @@ def define_D(opt):
     netD = None
     which_model_netD = opt.which_model_netD
     if which_model_netD == 'basic':
-        netD = CustomDiscriminator(opt)
+        netD = Discriminator(**opt.Discriminator_basic_metadata)
+        # netD = CustomDiscriminator(opt)
     netD = netD.to(opt.device)
     netD.apply(normal_init)
     return netD

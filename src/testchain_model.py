@@ -21,7 +21,7 @@ from monai.transforms import (
 class TestChain:
     def __init__(self, opt, paths):
         # self.test_data = random.shuffle(paths)
-        self.data_paths = paths[:10]
+        self.data_paths = paths
         self.option = opt
         self.confusion_matrix_list = {i: [] for i in self.option.ConfusionMatrixMetric}
         self.visualizer = Visualizer(self.option)
@@ -50,10 +50,10 @@ class TestChain:
         with torch.no_grad():
             for test_data in self.test_loader:
                 self.model.set_input(test_data)
-                self.model.inference()
+                self.model.calculate_inference()
                 output_images = self.model.get_current_visuals()
                 # seg_outputs = [self.post_trans(i) for i in decollate_batch(seg_pred)]
-                self.counter=+1
+                self.counter = self.counter + 1
                 self.calculate_metrics(output_images)
                 self.visualize_images(output_images)
 
@@ -97,13 +97,32 @@ class TestChain:
             metric_dict_image[self.option.ConfusionMatrixMetric[i]].append(
                 conf_matrix[i].item())
         return metric_dict_image
-    def visualize_images(self,output_images):
-        pred_seg_cpu = output_images['seg_B'].cpu().numpy()[0, 0].transpose((1, 0, 2))
-        real_seg_cpu = output_images['real_seg'].cpu().numpy()[0, 0].transpose((1, 0, 2))
-        print('pred_seg_cpu',np.shape(pred_seg_cpu))
-        print('real_seg_cpu', np.shape(real_seg_cpu))
-        self.visualizer.save_images(pred_seg_cpu, f'pred_seg_{self.counter}', label=True)
-        self.visualizer.save_images(real_seg_cpu, f'real_seg_{self.counter}', label=True)
+
+
+def visualize_images(self, output_images):
+    for i in range(len(output_images['seg_B'])):
+
+        pred_seg_cpu = output_images['seg_B'][i].cpu().numpy()[0].transpose((1, 0, 2))
+        real_seg_cpu = output_images['real_seg'][i].cpu().numpy()[0].transpose((1, 0, 2))
+
+        self.visualizer.save_images(pred_seg_cpu, f'pred_seg_{self.counter}_batch_{i}', label=True, epoch=self.counter)
+        self.visualizer.save_images(real_seg_cpu, f'real_seg_{self.counter}_batch_{i}', label=True, epoch=self.counter)
+
+        if self.option.calculate_uncertainty:
+            variance = output_images['variance'].cpu().numpy()[i].transpose((0, 2, 1, 3))
+            self.visualizer.save_images(variance[0], f'heatmap_class_{0}_image_{self.counter}_batch_{i}', label=True,
+                                        epoch=self.counter)
+            self.visualizer.save_images(variance[1], f'heatmap_class_{1}_image_{self.counter}_batch_{i}', label=True,
+                                        epoch=self.counter)
+            self.visualizer.save_images(variance[2], f'heatmap_class_{2}_image_{self.counter}_batch_{i}', label=True,
+                                        epoch=self.counter)
+            self.visualizer.save_images(variance[3], f'heatmap_class_{3}_image_{self.counter}_batch_{i}', label=True,
+                                        epoch=self.counter)
+            self.visualizer.save_images(variance[4], f'heatmap_class_{4}_image_{self.counter}_batch_{i}', label=True,
+                                        epoch=self.counter)
+
+            entropy = output_images['entropy'].cpu().numpy()[i].transpose((1, 0, 2))
+            self.visualizer.save_images(entropy, f'entropy_{self.counter}_batch_{i}', label=True, epoch=self.counter)
 
 
 

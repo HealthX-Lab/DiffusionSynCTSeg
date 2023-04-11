@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import os
+from monai.data import  decollate_batch
 from collections import OrderedDict
 from torch.autograd import Variable
 import itertools
@@ -27,8 +28,8 @@ from monai.transforms import (
 
 
 class TestSEGModel(BaseModel):
-    def name(self):
-        return 'TestSEGModel'
+    # def name(self):
+    #     return 'TestSEGModel'
 
     def initialize(self, opt):
         self.option = opt
@@ -52,7 +53,7 @@ class TestSEGModel(BaseModel):
 
     def inference(self):
         def _compute():
-            self.pred_seg = sliding_window_inference(
+            return sliding_window_inference(
                 inputs=self.real_B,
                 roi_size=self.option.roi_size,
                 sw_batch_size=1,
@@ -66,19 +67,62 @@ class TestSEGModel(BaseModel):
         else:
             return _compute()
 
+    def calculate_inference(self):
+
+        if self.option.calculate_uncertainty:
+            self.get_monte_carlo_predictions()
+        else:
+            self.pred_seg = self.inference()
+
     def get_current_visuals(self):
-        print('self.real_Seg.data', np.shape(self.real_Seg.data))
-        print('self.pred_seg', np.shape(self.pred_seg.data))
-        print('self.real_Seg.data2', np.shape(self.real_Seg))
-        print('self.pred_seg2', np.shape(self.pred_seg))
+
         post_trans = Compose([Activations(sigmoid=True), AsDiscrete(argmax=True)])
-        self.pred_seg = post_trans(self.pred_seg)
-        print('self.pred_seg3', np.shape(self.pred_seg))
-        return {'seg_B':self.pred_seg, 'real_seg':self.real_Seg}
-        # return self.pred_seg, self.real_Seg
+        self.pred = [post_trans(i) for i in decollate_batch(self.pred_seg)]
+        self.real = [post_trans(i) for i in decollate_batch(self.real_Seg)]
+
+        return {'seg_B': self.pred, 'real_seg': self.real, 'variance': self.variance, 'entropy': self.entropy}
 
     def eval(self):
-        self.netG_seg
+        self.netG_seg.eval()
+        if self.option.calculate_uncertainty:
+            print('in uncertainty')
+            self.enable_dropout(self.netG_seg)
+
+
+    def enable_dropout(self, model):
+        """ Function to enable the dropout layers during test-time """
+        for m in model.modules():
+            if m.__class__.__name__.startswith('Dropout'):
+                print('******', m.__class__.__name__)
+                m.train()
+
+    def get_monte_carlo_predictions(self):
+        """ Function to get the monte-carlo samples and uncertainty estimates
+        through multiple forward passes
+
+        """
+        n_samples = self.option.uncertainty_num_samples
+        sample_predictions = []
+
+        for j in range(n_samples):
+            output = self.inference()
+            sample_predictions.append(output)
+
+        prediction = torch.stack(sample_predictions)
+        print('prediction', np.shape(prediction))
+
+        # Calculating mean across multiple MCD forward passes
+        mean_predictions = torch.mean(prediction, dim=0)  # shape (n_samples, n_classes)
+        self.pred_seg = mean_predictions
+        print('mean prediction ', np.shape(mean_predictions))
+
+        # Calculating variance across multiple MCD forward passes
+        self.variance = torch.var(prediction, axis=0)  # shape (n_samples, n_classes)
+        print('variance', np.shape(self.variance))
+
+        # Calculate the entropy of a probability distribution
+        self.entropy = -(mean_predictions * torch.log(mean_predictions + 1e-9)).sum(dim=1)
+        print('entropy', np.shape(self.entropy))
 
 
 

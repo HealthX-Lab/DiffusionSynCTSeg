@@ -14,6 +14,12 @@ from monai.transforms import (
     EnsureTyped,
     EnsureType,
     Invertd,
+    NormalizeIntensityd,
+    Orientationd,
+    RandFlipd,
+    RandScaleIntensityd,
+    RandShiftIntensityd,
+    ScaleIntensityd,
 )
 from src.ConvertToMultiChannel import ConvertToMultiChannelVentricleClasses
 class MyTransformer:

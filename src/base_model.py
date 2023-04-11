@@ -17,7 +17,7 @@ class BaseModel():
         if self.opt.seg_norm == 'DiceNorm':
             self.loss_seg_function = DiceLoss()
         elif self.opt.seg_norm == 'CrossEntropy':
-            self.loss_seg_function = nn.CrossEntropyLoss(weight=opt.cross_entropy_weight)
+            self.loss_seg_function = nn.CrossEntropyLoss(weight=torch.tensor(opt.cross_entropy_weight).to(opt.device))
         elif self.opt.seg_norm == 'DiceCELoss':
             self.loss_seg_function = DiceCELoss(softmax=True)
 

@@ -22,7 +22,7 @@ class TrainingChain:
     def __init__(self, opt, paths):
         self.data_dicts_train = []
         self.data_dicts_val = []
-        self.data_paths = paths[:10]
+        self.data_paths = paths
         self.option = opt
         self.train_data, self.val_data = self.seprate_train_val()
         self.visualizer = Visualizer(self.option)
@@ -72,13 +72,53 @@ class TrainingChain:
     def get_train_data(self):
         return self.train_data
 
-    def visualize_images(self,output_images,epoch):
-        pred_seg_cpu = output_images['seg_B'].cpu().numpy()[0, 0].transpose((1, 0, 2))
-        real_seg_cpu = output_images['real_seg'].cpu().numpy()[0, 0].transpose((1, 0, 2))
-        print('pred_seg_cpu',np.shape(pred_seg_cpu))
-        print('real_seg_cpu', np.shape(real_seg_cpu))
-        self.visualizer.save_images(pred_seg_cpu, f'pred_seg_val_epoch_{epoch}', label=True)
-        self.visualizer.save_images(real_seg_cpu, f'real_seg_val_epoch_{epoch}', label=True)
+    def visualize_images(self,output_images,epoch,number=0):
+        lambda_idt = self.option.identity
+        image_types = ['real_A', 'fake_A', 'rec_A',
+                       'real_B', 'fake_B', 'rec_B',
+                       'seg_B', 'real_seg']
+        if lambda_idt > 0:
+            image_types.append('idt_A')
+            image_types.append('idt_B')
+
+        for i in range(len(output_images['seg_B'])):
+            for type in image_types:
+                if 'seg' not in type:
+                    print('##########output_images[type]##########', type,np.shape(output_images[type][i].cpu().numpy()[0]))
+                    cpu_image = output_images[type][i].cpu().numpy()[0].transpose((1, 0, 2))
+                    self.visualizer.save_images(cpu_image, f'{type}_val_{number}_epoch_{epoch}_batch_{i}',epoch=epoch)
+                else:
+                    print('##########output_images[type] seg##########', type,np.shape(output_images[type][i].cpu().numpy()[0]))
+                    cpu_image = output_images[type][i].cpu().numpy()[0].transpose((1, 0, 2))
+                    self.visualizer.save_images(cpu_image, f'{type}_val_{number}_epoch_{epoch}_batch_{i}',label=True,epoch=epoch)
+
+
+
+        image_types.remove('real_A')
+        image_types.remove('real_B')
+        image_types.remove('real_seg')
+
+        if self.option.calculate_uncertainty:
+            for i in range(len(output_images['seg_B'])):
+                for type in image_types:
+                    print('########## output_images[variance][type]##########', np.shape( output_images['variance'][type][i]))
+                    cpu_variance_image = output_images['variance'][type][i].cpu().numpy().transpose((0,2,1,3))
+                    if 'seg' in type:
+                        print('entropy .cpu().numpy()', np.shape(output_images['entropy'][type].cpu().numpy()))
+
+                        entropy = output_images['entropy'][type].cpu().numpy()[i].transpose((1, 0, 2))
+                        print('entropy', np.shape(entropy))
+                        self.visualizer.save_images(entropy, f'entropy_{number}_epoch_{epoch}_batch_{i}',label=True,epoch=epoch)
+
+
+                        print('seg',np.shape(cpu_variance_image[i]))
+                        for j in range(self.option.num_classes):
+                            self.visualizer.save_images(cpu_variance_image[j], f'heatmap_{type}_val_{number}_class_{j}_epoch_{epoch}_batch_{i}',label=True,epoch=epoch)
+                    else:
+                        print(' not seg', np.shape(cpu_variance_image[0]))
+                        self.visualizer.save_images(cpu_variance_image[0], f'heatmap_{type}_val_{number}_epoch_{epoch}_batch_{i}',epoch=epoch)
+
+
 
 
 
@@ -107,7 +147,7 @@ class TrainingChain:
             self.visualizer.log_model(
                 f"saving the best model (epoch {epoch}"
                 f"with dice loss {self.best_loss}\n ")
-            self.model.save(f'beast_dice_loss_{epoch}')
+            self.model.save(f'best_dice_loss_{epoch}')
 
 
     def train_model(self):
@@ -163,7 +203,7 @@ class TrainingChain:
                     self.visualizer.log_model(
                         f"saving the best model (epoch {epoch}, total_steps {total_steps})\n "
                         f"with loss {errors}\n mean error {mean_errors}")
-                    self.model.save(f'beast_mean_error_{epoch}')
+                    self.model.save(f'best_mean_error_{epoch}')
 
 
             self.visualizer.log_model(
@@ -244,17 +284,20 @@ class TrainingChain:
 
     def eval2_model(self,epoch):
         self.model.eval()
+        number = 0
         with torch.no_grad():
             for val_data in self.val_loader:
+                number = number + 1
+                print('I am here *********',number)
                 self.model.set_input(val_data)
-                self.model.evaluation2_step()
+                self.model.calculate_evaluation()
 
                 errors = self.model.get_current_errors(is_train=False)
                 output_images = self.model.get_current_visuals()
                 print('val_errors',errors)
 
                 self.calculate_metrics(output_images)
-                self.visualize_images(output_images,epoch)
+                self.visualize_images(output_images,epoch,number)
 
 
             self.aggrigate_metrics()
@@ -271,8 +314,6 @@ class TrainingChain:
                 f"saving the best model (epoch {epoch}"
                 f"with dice loss {self.best_loss}\n ")
             self.model.save(f'beast_dice_loss_{epoch}')
-
-
 
 
 

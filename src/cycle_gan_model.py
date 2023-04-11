@@ -197,6 +197,15 @@ class CycleSEGModel(BaseModel):
     def eval(self):
         for model in self.list_networks:
             model.eval()
+            if self.opt.calculate_uncertainty:
+                self.enable_dropout(model)
+
+    def enable_dropout(self, model):
+        """ Function to enable the dropout layers during test-time """
+        for m in model.modules():
+            if m.__class__.__name__.startswith('Dropout'):
+                print('******', m.__class__.__name__)
+                m.train()
 
 
     def backward_D_basic(self, netD, real, fake):
@@ -315,26 +324,35 @@ class CycleSEGModel(BaseModel):
                     'D_B':D_B,'G_B':G_B,'Cyc_B':Cyc_B ,
                     'Seg_B':Seg_B}
 
-
     def get_current_visuals(self):
 
         real_A = self.real_A.data
-        fake_B = self.fake_B.data
-        post_trans = Compose([Activations(sigmoid=True), AsDiscrete(argmax=True)])
-        seg_B = post_trans(self.seg_fake_B)
-        manual_B = self.real_Seg.data
-        rec_A = self.rec_A.data
+        fake_A = self.fake_A.data if not self.opt.calculate_uncertainty else self.mean_images['fake_A']
+        rec_A = self.rec_A.data if not self.opt.calculate_uncertainty else self.mean_images['rec_A']
+
         real_B = self.real_B.data
-        fake_A = self.fake_A.data
-        rec_B = self.rec_B.data
+        fake_B = self.fake_B.data if not self.opt.calculate_uncertainty else self.mean_images['fake_B']
+        rec_B = self.rec_B.data if not self.opt.calculate_uncertainty else self.mean_images['rec_B']
+
+        post_trans = Compose([Activations(sigmoid=True), AsDiscrete(argmax=True)])
+        pred_seg = self.seg_fake_B if not self.opt.calculate_uncertainty else self.mean_images['seg_B']
+        pred_seg_post_process = [post_trans(i) for i in decollate_batch(pred_seg)]
+        real_seg_post_process = [post_trans(i) for i in decollate_batch(self.real_Seg)]
+
+        variance = [] if not self.opt.calculate_uncertainty else self.variance_images
+        entropy = [] if not self.opt.calculate_uncertainty else self.entropy_images
+
         if self.opt.identity > 0.0:
-            idt_A = self.idt_A.data
-            idt_B = self.idt_B.data
-            return {'real_A': real_A, 'fake_B': fake_B, 'rec_A': rec_A, 'idt_B':idt_B,'seg_B':seg_B,
-                    'real_B':real_B, 'fake_A': fake_A, 'rec_B':rec_B, 'idt_A':idt_A, 'real_seg':manual_B}
+            idt_A = self.idt_A.data if not self.opt.calculate_uncertainty else self.mean_images['']
+            idt_B = self.idt_B.data if not self.opt.calculate_uncertainty else self.mean_images['']
+            return {'real_A': real_A, 'fake_B': fake_B, 'rec_A': rec_A, 'idt_B': idt_B, 'seg_B': pred_seg_post_process,
+                    'real_B': real_B, 'fake_A': fake_A, 'rec_B': rec_B, 'idt_A': idt_A,
+                    'real_seg': real_seg_post_process,
+                    'variance': variance, 'entropy': entropy}
         else:
-            return {'real_A': real_A, 'fake_B': fake_B, 'rec_A': rec_A, 'seg_B':seg_B,
-                    'real_B':real_B, 'fake_A': fake_A, 'rec_B':rec_B,  'real_seg':manual_B}
+            return {'real_A': real_A, 'fake_B': fake_B, 'rec_A': rec_A, 'seg_B': pred_seg_post_process,
+                    'real_B': real_B, 'fake_A': fake_A, 'rec_B': rec_B, 'real_seg': real_seg_post_process,
+                    'variance': variance, 'entropy': entropy}
 
     def save(self, label):
         self.save_network(self.netG_A, 'G_A', label)
@@ -343,10 +361,22 @@ class CycleSEGModel(BaseModel):
         self.save_network(self.netD_B, 'D_B', label)
         self.save_network(self.netG_seg, 'Seg_B', label)
 
+
+    def calculate_evaluation(self):
+
+        if self.opt.calculate_uncertainty:
+            self.get_monte_carlo_predictions()
+        else:
+            self.evaluation2_step()
+
     def evaluation2_step(self):
         lambda_idt = self.opt.identity
         lambda_A = self.opt.lambda_A
         lambda_B = self.opt.lambda_B
+        self.loss_G_A_val = 0
+        self.loss_G_B_val = 0
+        self.loss_D_A_val = 0
+        self.loss_D_B_val = 0
         # Identity loss
         if lambda_idt > 0:
             # G_A should be identity if real_B is fed.
@@ -355,7 +385,7 @@ class CycleSEGModel(BaseModel):
                 roi_size=self.opt.roi_size,
                 sw_batch_size=1,
                 predictor=self.netG_A,
-                overlap=0.5,
+                overlap=0.95,
             )
             self.loss_idt_A_val = self.criterionIdt(self.idt_A, self.real_B) * lambda_B * lambda_idt
             # G_B should be identity if real_A is fed.
@@ -364,7 +394,7 @@ class CycleSEGModel(BaseModel):
                 roi_size=self.opt.roi_size,
                 sw_batch_size=1,
                 predictor=self.netG_B,
-                overlap=0.5,
+                overlap=0.95,
             )
             self.loss_idt_B_val = self.criterionIdt(self.idt_B, self.real_A) * lambda_A * lambda_idt
         else:
@@ -378,7 +408,7 @@ class CycleSEGModel(BaseModel):
             roi_size=self.opt.roi_size,
             sw_batch_size=1,
             predictor=self.netG_A,
-            overlap=0.5,
+            overlap=0.95,
         )
 
         # # D_B(G_B(B))
@@ -387,7 +417,7 @@ class CycleSEGModel(BaseModel):
             roi_size=self.opt.roi_size,
             sw_batch_size=1,
             predictor=self.netG_B,
-            overlap=0.5,
+            overlap=0.95,
         )
 
         # # Forward cycle loss
@@ -396,7 +426,7 @@ class CycleSEGModel(BaseModel):
             roi_size=self.opt.roi_size,
             sw_batch_size=1,
             predictor=self.netG_B,
-            overlap=0.5,
+            overlap=0.95,
         )
         self.loss_cycle_A_val = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
         #
@@ -406,7 +436,7 @@ class CycleSEGModel(BaseModel):
             roi_size=self.opt.roi_size,
             sw_batch_size=1,
             predictor=self.netG_A,
-            overlap=0.5,
+            overlap=0.95,
         )
         self.loss_cycle_B_val = self.criterionCycle(self.rec_B, self.real_B) * lambda_B
         #
@@ -416,16 +446,68 @@ class CycleSEGModel(BaseModel):
             roi_size=self.opt.roi_size,
             sw_batch_size=1,
             predictor=self.netG_seg,
-            overlap=0.5,
+            overlap=0.95,
         )
         self.loss_seg_val = self.loss_seg_function(self.seg_fake_B, self.real_Seg)
 
 
-        self.loss_G_A_val = 0
 
-        self.loss_G_B_val = 0
-        self.loss_D_A_val = 0
-        self.loss_D_B_val = 0
+    def get_monte_carlo_predictions(self):
+        """ Function to get the monte-carlo samples and uncertainty estimates
+        through multiple forward passes
+
+        """
+        lambda_idt = self.opt.identity
+        if lambda_idt > 0:
+            image_types = ['fake_A', 'rec_A', 'idt_A',
+                           'fake_B', 'rec_B', 'idt_B', 'seg_B']
+        else:
+            image_types = ['fake_A', 'rec_A',
+                           'fake_B', 'rec_B', 'seg_B']
+        MC_images = {key:[] for key in image_types}
+        self.mean_images = {key:[] for key in image_types}
+        self.entropy_images = {'seg_B':[]}
+        self.variance_images = {key:[] for key in image_types}
+        MC_stack = {key: [] for key in image_types}
+
+
+        n_samples = self.opt.uncertainty_num_samples
+
+
+        for j in range(n_samples):
+            self.evaluation2_step()
+            if lambda_idt > 0:
+                MC_images['idt_A'].append(self.idt_A)
+                MC_images['idt_B'].append(self.idt_B)
+            MC_images['rec_A'].append(self.rec_A)
+            MC_images['rec_B'].append(self.rec_B)
+            MC_images['fake_A'].append(self.fake_A)
+            MC_images['fake_B'].append(self.fake_B)
+            MC_images['seg_B'].append(self.seg_fake_B)
+
+
+        for image_name, prediction in MC_images.items():
+            MC_stack[image_name] = torch.stack(prediction)
+
+        for image_name, prediction in MC_stack.items():
+            # Calculating mean across multiple MCD forward passes
+            self.mean_images[image_name] = torch.mean(prediction, dim=0)  # shape (n_samples, n_classes)
+
+
+            # Calculating variance across multiple MCD forward passes
+            self.variance_images[image_name] = torch.var(prediction, axis=0)  # shape (n_samples, n_classes)
+
+            # Calculate the entropy of a probability distribution
+            if 'seg_B'== image_name:
+               self.entropy_images[image_name] = -(self.mean_images[image_name] * torch.log(self.mean_images[image_name] + 1e-9)).sum(dim=1)
+               # Calculate the mean and standard deviation of the pixel values
+               mean = np.mean(self.entropy_images[image_name])
+               std = np.std(self.entropy_images[image_name])
+               print('mean***********std*******',mean,std)
+
+               # Normalize each image by subtracting the mean and dividing by the standard deviation
+               self.entropy_images[image_name] = (self.entropy_images[image_name] - mean) / std
+
 
 
 

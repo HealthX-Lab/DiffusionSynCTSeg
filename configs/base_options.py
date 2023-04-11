@@ -14,13 +14,13 @@ class BaseOptions():
         self.parser.add_argument('--operation', type=str, default='Train', help='chooses which Train, Test, TestSegMRI, TestMRI2CT, check_image')
 
         # ------------------------- 03- Cycle seg model------------------------
-        self.parser.add_argument('--continue_train', type=bool, default=True, help='continue training: load the latest model')
-        self.parser.add_argument('--which_epoch', type=int, default=1, help='which epoch to load? set to latest to use latest cached model')
+        self.parser.add_argument('--continue_train', type=bool, default=False, help='continue training: load the latest model')
+        self.parser.add_argument('--which_epoch', type=int, default=100, help='which epoch to load? set to latest to use latest cached model')
         self.parser.add_argument('--num_classes', type=int, default=5, help='# of output classes')
         self.parser.add_argument('--beta1', type=float, default=0.5, help='momentum term of adam')
         self.parser.add_argument('--lr', type=float, default=0.0002,
                                  help='initial learning rate for adam')  # ************************************************0.9
-        self.parser.add_argument('--lambda_A', type=float, default=10.0, help='weight for cycle loss (A -> B -> A)')
+        self.parser.add_argument('--lambda_A', type=float, default=1.0, help='weight for cycle loss (A -> B -> A)')
         self.parser.add_argument('--lambda_B', type=float, default=10.0, help='weight for cycle loss (B -> A -> B)')
         self.parser.add_argument('--identity', type=float, default=0.0,
                                  help='use identity mapping. Setting identity other than 1 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set optidentity = 0.1')
@@ -34,7 +34,7 @@ class BaseOptions():
 
         # ------------------------- 04- Training Chain ------------------------
         self.parser.add_argument('--model_type', type=str, default='GAN', help='Choose between GAN, ')
-        self.parser.add_argument('--max_epochs', type=int, default=4, help='# of epochs ')
+        self.parser.add_argument('--max_epochs', type=int, default=100, help='# of epochs ')
         self.parser.add_argument('--ConfusionMatrixMetric', type=tuple, default=(
             "sensitivity", "precision", "recall", 'specificity'), help='Confusion Matrix Metric')
         self.parser.add_argument('--print_freq', type=int, default=100,
@@ -46,8 +46,8 @@ class BaseOptions():
 
 
         # ------------------------- 05- Base Model ------------------------
-        self.parser.add_argument('--seg_norm', type=str, default='DiceNorm', help='DiceNorm or CrossEntropy')
-        self.parser.add_argument('--cross_entropy_weight', type=list, default=[1,1,1,1,1], help='cross entropy weights for segmentation')
+        self.parser.add_argument('--seg_norm', type=str, default='CrossEntropy', help='DiceNorm or CrossEntropy')
+        self.parser.add_argument('--cross_entropy_weight', type=list, default=[1,10,10,10,10], help='cross entropy weights for segmentation')
         self.parser.add_argument('--VAL_AMP', type=bool, default=False, help='amp. MONAI has exposed this feature in the workflow implementations by providing access to the amp parameter')
 
         # ------------------------- 05- Network ------------------------
@@ -58,14 +58,14 @@ class BaseOptions():
                                  default={"spatial_dims":3,
                                         "in_channels":1,
                                         "out_channels":1,
-                                        "channels":(16, 32, 64,128),
-                                        "strides":(2,2,2),
+                                        "channels":(16, 32, 64,128,256),
+                                        "strides":(2,2,2,2),
                                         "kernel_size":3,
                                         "up_kernel_size":3,
                                         "num_res_units":0,
                                         "act":'PRELU',
-                                        # "norm":'INSTANCE',
-                                        # "dropout":0.0,
+                                        "norm":'INSTANCE',
+                                        "dropout":0.5,
                                         # "bias":True,
                                         # "adn_ordering":'NDA',
                                         # "dimensions":None,
@@ -134,20 +134,20 @@ class BaseOptions():
         self.parser.add_argument('--Gen_dropout', type=float, default=0.2,
                                  help='# drop out in last layer in generator model')
 
-        self.parser.add_argument('--which_model_netG_seg', type=str, default='SegResNet',
+        self.parser.add_argument('--which_model_netG_seg', type=str, default='UNet',
                                  help='selects model to use for netG between SegResNet, SegResNetVAE, UNet, SwinUNETR')
         self.parser.add_argument('--UNet_SEG_meatdata', type=dict,
                                  default={"spatial_dims": 3,
                                           "in_channels": 1,
                                           "out_channels": 5,
-                                          "channels": (16, 32, 64),
-                                          "strides": (2, 2),
+                                          "channels": (16, 32, 64,128),
+                                          "strides": (2, 2,2),
                                           "kernel_size": 3,
                                           "up_kernel_size": 3,
                                           "num_res_units": 0,
                                           "act": 'PRELU',
-                                          # "norm": 'INSTANCE',
-                                          # "dropout": 0.0,
+                                          "norm": 'INSTANCE',
+                                          "dropout": 0.5,
                                           # "bias": True,
                                           # "adn_ordering": 'NDA',
                                           # "dimensions": None,
@@ -161,7 +161,7 @@ class BaseOptions():
                                           "init_filters": 8,
                                           "in_channels": 1,
                                           "out_channels": 5,
-                                          "dropout_prob": None,
+                                          "dropout_prob": 0.5,
                                           "act": ('RELU', {'inplace': True}),
                                           # "norm": ('GROUP', {'num_groups': 8}),
                                           "use_conv_final": True,
@@ -255,6 +255,8 @@ class BaseOptions():
         # ------------------------- 06- Test  ------------------------
         self.parser.add_argument('--roi_size', type = tuple, default=(64,64,64))
         self.parser.add_argument('--sw_batch_size', type=int, default=1)
+        self.parser.add_argument('--calculate_uncertainty', type=bool, default=True)
+        self.parser.add_argument('--uncertainty_num_samples', type=int, default=5)
         # ------------------------- 06- Transformer  ------------------------
         self.parser.add_argument('--transformers', type=dict,
                                  default= {'Train':
@@ -269,10 +271,25 @@ class BaseOptions():
                                                  'arg': {'keys': ['CT','MRI','label'],
                                                         'label_key': "label",
                                                         'spatial_size': [64,64,64],
-                                                        'num_samples': 1,
-                                                         # 'ratios':[1, 1, 1, 1, 1],
+                                                        'num_samples': 10,
+                                                         'ratios':[1, 1, 1, 1, 1],
                                                          "num_classes":5,
                                                         }
+                                                 },
+                                                {'cls': 'ScaleIntensityd',
+                                                 'arg': {'keys': ['CT', 'MRI'],
+                                                         'minv': 0.0,
+                                                         'maxv': 1.0 }
+                                                 },
+                                                {'cls': 'RandScaleIntensityd',
+                                                 'arg': {'keys': ['CT', 'MRI'],
+                                                         'factors': 0.1,
+                                                         'prob': 1.0}
+                                                 },
+                                                {'cls': 'RandShiftIntensityd',
+                                                 'arg': {'keys': ['CT', 'MRI'],
+                                                         'offsets': 0.1,
+                                                         'prob': 1.0}
                                                  },
                                                 ],
                                            'val':
@@ -283,6 +300,11 @@ class BaseOptions():
                                                     'arg': {'keys': ['CT', 'MRI', 'label']}},
                                                    {'cls': 'ConvertToMultiChannelVentricleClasses',
                                                     'arg': {'keys': ['label']}},
+                                                   {'cls': 'ScaleIntensityd',
+                                                    'arg': {'keys': ['CT', 'MRI'],
+                                                            'minv': 0.0,
+                                                            'maxv': 1.0}
+                                                    },
                                                    # {'cls': 'RandCropByLabelClassesd',
                                                    #  'arg': {'keys': ['CT', 'MRI', 'label'],
                                                    #          'label_key': "label",
@@ -302,6 +324,11 @@ class BaseOptions():
                                                      'arg': {'keys': ['label']}},
                                                   {'cls': 'EnsureChannelFirstd',
                                                    'arg': {'keys': ['CT', 'label']}},
+                                                  {'cls': 'ScaleIntensityd',
+                                                   'arg': {'keys': ['CT'],
+                                                            'minv': 0.0,
+                                                            'maxv': 1.0}
+                                                  },
                                                   # {'cls': 'RandCropByLabelClassesd',
                                                   #  'arg': {'keys': ['CT', 'MRI', 'label'],
                                                   #          'label_key': "label",
@@ -316,7 +343,7 @@ class BaseOptions():
 
         # ------------------------- 06- Log  ------------------------
         self.parser.add_argument('--val_template_save_path', type=str, default='./save_images/val_template.png')
-        self.parser.add_argument('--name', type=str, default='first',
+        self.parser.add_argument('--name', type=str, default='Unet_G256_seg128_CE_1_10_loss_1_5',
                                  help='name of the experiment. It decides where to store samples and models')
         self.parser.add_argument('--checkpoints_dir', type=str, default='checkpoints', help='models are saved here')
         self.parser.add_argument('--logs_dir', type=str, default='logs',
