@@ -5,8 +5,15 @@ from PIL import Image
 import torch
 import random
 from skimage import io
+import util.util as util
 from . import random_crop_yh
 import numpy as np
+from collections import Counter
+from . import local_hist
+from scipy.ndimage import distance_transform_edt as eucl_distance
+from typing import Any, Callable, Iterable, List, Set, Tuple, TypeVar, Union, cast
+
+
 class yhSegDataset(BaseDataset):
     def initialize(self, opt):
         print('**************yhSegDataset********************')
@@ -25,6 +32,7 @@ class yhSegDataset(BaseDataset):
 
         self.A_size = len(self.A_paths)
         self.B_size = len(self.B_paths)
+        self.Seg_size = len(self.Seg_paths)
         if not self.opt.isTrain:
             self.skipcrop = True
         else:
@@ -53,90 +61,116 @@ class yhSegDataset(BaseDataset):
 
         transform_list = []
         transform_list.append(transforms.Normalize((0.5),
-                                            (0.5)))
+                                                   (0.5)))
         self.transforms_normalize = transforms.Compose(transform_list)
+
+        transform_list = []
+        transform_list.append(transforms.Lambda(lambda img: transforms.functional.equalize(img)))
+        self.transforms_HE = transforms.Compose(transform_list)
+
+        transform_list = []
+        transform_list.append(transforms.GaussianBlur(self.opt.gaussian_kernel_size, self.opt.gaussian_sigma))
+        self.transforms_Gaussian = transforms.Compose(transform_list)
+
+        self.transforms_LHE = local_hist.LocalHistEqualization(self.opt.clip_limit)
+
+    def print_pixel_counts(self, image, stage_identifier):
+        """Utility function to print pixel counts and stage identifier"""
+        image_num = np.asarray(image)
+        pixel_values = image_num.ravel()
+        pixel_counts = Counter(pixel_values)
+        print(f"--- {stage_identifier} ---")
+        for pixel_value, count in pixel_counts.items():
+            print(f"Pixel value: {pixel_value}, Count: {count}")
+
+    def one_hot2dist(self, seg, resolution, dtype=None):
+        seg = seg.cpu().numpy()
+        K: int = len(seg)
+
+        res = np.zeros_like(seg, dtype=dtype)
+        for k in range(K):
+            posmask = seg[k].astype(np.bool)
+
+            if posmask.any():
+                negmask = ~posmask
+                res[k] = eucl_distance(negmask, sampling=resolution) * negmask \
+                         - (eucl_distance(posmask, sampling=resolution) - 1) * posmask
+
+        return res
+
 
 
     def __getitem__(self, index):
 
         index_A = index % self.A_size
+        if self.opt.model == 'finetune':
+            index_A = index % self.Seg_size
 
-        # while 1:
-        #    index_A = index % self.A_size
-        #    Seg_path = self.Seg_paths[index_A]
-        #    Seg_img = Image.open(Seg_path).convert('I')
-        #    Seg_img = self.transforms_seg_scale(Seg_img)
-        #    Seg_img = self.transforms_toTensor(Seg_img)
-        #    Seg_img[Seg_img == 0] = 0
-        #    Seg_img[Seg_img == 50] = 0
-        #    Seg_img[Seg_img == 100] = 0
-        #    Seg_img[Seg_img == 150] = 0
-        #    Seg_img[Seg_img == 200] = 1
-        #    print('while 1',index_A, Seg_path)
-        #    if np.sum(Seg_img)>=1:
-        #        print('while break', index_A, Seg_path)
-        #        break
         A_path = self.A_paths[index_A]
-        # Seg_path = A_path.replace(self.dir_A,self.dir_Seg)
-        # Seg_path = Seg_path.replace('_rawimg','_organlabel')
         Seg_path = self.Seg_paths[index_A]
-        # print('Seg path :  ',Seg_path)
 
-        Seg_img = io.imread(Seg_path,as_gray=True)
-        Seg_img = Image.fromarray(Seg_img)
-
-        # print(f'new method for reading seg image min {np.min(Seg_img)}  and max {np.max(Seg_img)} hist   {hist}')
-        #
-
-
+        Seg_img = Image.open(Seg_path).convert('I')
         index_B = index_A
         B_path = self.B_paths[index_B]
-        # print('## ',A_path,' ## ', B_path)
         A_img = Image.open(A_path).convert('L')
-        # print('A_image',np.shape(A_img),flush=True)
-
         B_img = Image.open(B_path).convert('L')
-        # print('B_image', np.shape(B_img),flush=True)
+
+        if self.opt.GaussianBlur:
+            B_img = self.transforms_Gaussian(B_img)
+
+        if self.opt.Local_Histogram_Equalization:
+            slice_num = index_A % 41
+            if slice_num < 20:
+                x = self.opt.LHE_kernel_size_x
+                y = self.opt.LHE_kernel_size_y
+            else:
+                x = self.opt.LHE_kernel_size_y
+                y = self.opt.LHE_kernel_size_x
+
+            B_img = self.transforms_LHE(B_img, x, y)
+
+        if self.opt.Histogram_Equalization:
+            B_img = self.transforms_HE(B_img)
 
         A_img = self.transforms_scale(A_img)
         B_img = self.transforms_scale(B_img)
-
         Seg_img = self.transforms_seg_scale(Seg_img)
 
-
         if not self.skipcrop:
-            [A_img,Seg_img] = self.transforms_crop([A_img, Seg_img])
+            [A_img, Seg_img] = self.transforms_crop([A_img, Seg_img])
             [B_img] = self.transforms_crop([B_img])
 
-        # print('A_image_1', np.shape(A_img),flush=True)
         A_img = self.transforms_toTensor(A_img)
-        # print('A_image_2', np.shape(A_img),flush=True)
         B_img = self.transforms_toTensor(B_img)
         Seg_img = self.transforms_toTensor(Seg_img)
 
+        if self.opt.min_max_normalize:
+            min_val_A = torch.min(A_img)
+            max_val_A = torch.max(A_img)
+            A_img = (A_img - min_val_A) / (max_val_A - min_val_A)
+
+            min_val_B = torch.min(B_img)
+            max_val_B = torch.max(B_img)
+            B_img = (B_img - min_val_B) / (max_val_B - min_val_B)
 
         A_img = self.transforms_normalize(A_img)
-        # print('A_image_3', np.shape(A_img), flush=True)
-        # B_img = self.transforms_normalize(B_img)
+        if self.opt.B_normalization:
+            B_img = self.transforms_normalize(B_img)
 
-
-        Seg_img[Seg_img == 0] = 0
-        Seg_img[Seg_img == 1] = 1
-        # Seg_num = Seg_img.numpy()
-        #
-        # # Compute histogram of pixel intensities
-        # hist = np.histogram(Seg_num, bins=np.arange(np.min(Seg_num), np.max(Seg_num) + 2))
-        #
-        # print(f'min {np.min(Seg_num)}  max {np.max(Seg_num)}','',hist)
+        Seg_img[Seg_img != 200] = 0
+        Seg_img[Seg_img == 200] = 1
 
         Seg_imgs = torch.Tensor(self.opt.output_nc_seg, self.opt.fineSize, self.opt.fineSize)
         Seg_imgs[0, :, :] = Seg_img == 0
         Seg_imgs[1, :, :] = Seg_img == 1
 
+        dist_map_tensor = []
+        if self.opt.boundry_loss:
+            dist_map_tensor = self.one_hot2dist(Seg_imgs, [1, 1])
+            dist_map_tensor = torch.tensor(dist_map_tensor, dtype=torch.float32)
 
         return {'A': A_img, 'B': B_img, 'Seg': Seg_imgs, 'Seg_one': Seg_img,
-                'A_paths': A_path, 'B_paths': B_path, 'Seg_paths':Seg_path}
-
+                'A_paths': A_path, 'B_paths': B_path, 'Seg_paths': Seg_path, 'dist_map': dist_map_tensor}
 
     def __len__(self):
         return max(self.A_size, self.B_size)
