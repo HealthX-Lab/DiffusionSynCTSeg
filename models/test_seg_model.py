@@ -12,15 +12,16 @@ class TestSegModel(BaseModel):
     def initialize(self, opt):
         assert(not opt.isTrain)
         BaseModel.initialize(self, opt)
+        opt.no_dropout = False
         self.input_A = self.Tensor(opt.batchSize, opt.input_nc, opt.fineSize, opt.fineSize)
 
         self.netG = networks.define_G(opt.input_nc, opt.output_nc,
                                       opt.ngf, opt.which_model_netG,
-                                      opt.norm, not opt.no_dropout,
+                                      opt.norm, True,
                                       self.gpu_ids)
 
         self.netG_seg = networks.define_G(opt.input_nc_seg, opt.output_nc_seg,
-                                        opt.ngf, opt.which_model_netSeg, opt.norm, not opt.no_dropout, self.gpu_ids)
+                                        opt.ngf, opt.which_model_netSeg, opt.norm, True, self.gpu_ids)
 
 
 

@@ -3,7 +3,7 @@ def create_model(opt):
     model = None
     print(opt.model)
     if opt.model == 'cycle_gan':
-        assert(opt.dataset_mode == 'unaligned' or opt.dataset_mode == 'yh')
+        assert(opt.dataset_mode == 'unaligned' or opt.dataset_mode == 'yh' or opt.dataset_mode == 'yh_seg')
         from .cycle_gan_model import CycleGANModel
         model = CycleGANModel()
     elif opt.model == 'pix2pix':
@@ -19,9 +19,26 @@ def create_model(opt):
         from .test_model import TestModel
         model = TestModel()
     elif opt.model == 'test_seg':
-        assert(opt.dataset_mode == 'yh_test_seg')
+        assert(opt.dataset_mode == 'yh_seg')
         from .test_seg_model import TestSegModel
         model = TestSegModel()
+    elif opt.model == 'mri_seg':
+        assert(opt.dataset_mode == 'yh_seg')
+        from .mri_segmentation import MRISEGModel
+        model = MRISEGModel()
+    elif opt.model == 'mri_test':
+        assert(opt.dataset_mode == 'yh_seg')
+        from .test_mri_model import MRITestModel
+        model = MRITestModel()
+    elif opt.model == 'finetune':
+        assert(opt.dataset_mode == 'yh_seg')
+
+    elif opt.model == 'TestGANModel':
+        assert (opt.dataset_mode == 'yh_seg')
+        from .test_cycle_gan import TestGANModel
+        model = TestGANModel()
+
+
     else:
         raise ValueError("Model [%s] not recognized." % opt.model)
     model.initialize(opt)
