@@ -12,85 +12,14 @@ class Visualizer():
         self.use_html = False
         self.win_size = opt.display_winsize
         self.name = opt.name
-        # if self.display_id > 0:
-        #     import visdom
-        #     self.vis = visdom.Visdom(port = opt.display_port)
-        #     self.display_single_pane_ncols = opt.display_single_pane_ncols
 
-        # if self.use_html:
-        #     self.web_dir = os.path.join(opt.checkpoints_dir, opt.name, 'web')
-        #     self.img_dir = os.path.join(self.web_dir, 'images')
-        #     print('create web directory %s...' % self.web_dir)
-        #     util.mkdirs([self.web_dir, self.img_dir])
         self.log_name = os.path.join(opt.checkpoints_dir, opt.name, 'loss_log.txt')
         with open(self.log_name, "a") as log_file:
             now = time.strftime("%c")
             log_file.write('================ Training Loss (%s) ================\n' % now)
 
     # |visuals|: dictionary of images to display or save
-    def display_current_results(self, visuals, epoch):
-        print('in display_current_results')
-        # if self.display_id > 0: # show images in the browser
-        #     if self.display_single_pane_ncols > 0:
-        #         h, w = next(iter(visuals.values())).shape[:2]
-#                 table_css = """<style>
-#     table {border-collapse: separate; border-spacing:4px; white-space:nowrap; text-align:center}
-#     table td {width: %dpx; height: %dpx; padding: 4px; outline: 4px solid black}
-# </style>""" % (w, h)
-#                 ncols = self.display_single_pane_ncols
-#                 title = self.name
-#                 label_html = ''
-#                 label_html_row = ''
-#                 nrows = int(np.ceil(len(visuals.items()) / ncols))
-#                 images = []
-#                 idx = 0
-#                 for label, image_numpy in visuals.items():
-#                     # label_html_row += '<td>%s</td>' % label
-#                     images.append(image_numpy.transpose([2, 0, 1]))
-#                     idx += 1
-#                     # if idx % ncols == 0:
-#                         # label_html += '<tr>%s</tr>' % label_html_row
-#                         # label_html_row = ''
-#                 white_image = np.ones_like(image_numpy.transpose([2, 0, 1]))*255
-#                 while idx % ncols != 0:
-#                     images.append(white_image)
-#                     label_html_row += '<td></td>'
-#                     idx += 1
-#                 if label_html_row != '':
-#                     label_html += '<tr>%s</tr>' % label_html_row
-#                 # pane col = image row
-#                 self.vis.images(images, nrow=ncols, win=self.display_id + 1,
-#                                 padding=2, opts=dict(title=title + ' images'))
-#                 label_html = '<table>%s</table>' % label_html
-#                 self.vis.text(table_css + label_html, win = self.display_id + 2,
-#                               opts=dict(title=title + ' labels'))
-#             else:
-#                 idx = 1
-#                 for label, image_numpy in visuals.items():
-#                     #image_numpy = np.flipud(image_numpy)
-#                     self.vis.image(image_numpy.transpose([2,0,1]), opts=dict(title=label),
-#                                        win=self.display_id + idx)
-#                     idx += 1
-#
-#         if self.use_html: # save images to a html file
-#             for label, image_numpy in visuals.items():
-#                 img_path = os.path.join(self.img_dir, 'epoch%.3d_%s.png' % (epoch, label))
-#                 util.save_image(image_numpy, img_path)
-#             # update website
-#             # webpage = html.HTML(self.web_dir, 'Experiment name = %s' % self.name, reflesh=1)
-#             for n in range(epoch, 0, -1):
-#                 # webpage.add_header('epoch [%d]' % n)
-#                 ims = []
-#                 txts = []
-#                 links = []
-#
-#                 for label, image_numpy in visuals.items():
-#                     img_path = 'epoch%.3d_%s.png' % (n, label)
-#                     ims.append(img_path)
-#                     txts.append(label)
-#                     links.append(img_path)
-#                 # webpage.add_images(ims, txts, links, width=self.win_size)
-#             # webpage.save()
+
 
     # errors: dictionary of error labels and values
     def plot_current_errors(self, epoch, counter_ratio, opt, errors):
@@ -143,33 +72,161 @@ class Visualizer():
         if not os.path.exists(path):
             os.makedirs(path)
 
-    # save image to the disk
-    def save_images_to_dir(self, image_dir, visuals, image_path):
-        print('I am in save image')
+    def save_images_to_dir_uncertainty(self, image_dir, image_dict, image_path):
+        print('image_path: ', image_path[0])
         short_path = ntpath.basename(image_path[0])
+        print('short_path: ',short_path)
         name = os.path.splitext(short_path)[0]
         full_path_strs = image_path[0].split('/')
 
-        save_dir = os.path.join(image_dir, 'img_fake_only', full_path_strs[-3], full_path_strs[-2])
-        self.mkdir(save_dir)
-
-        label = 'fake_B'
-        image_numpy = visuals[label]
-        image_name = '%s_%s.png' % (name, label)
-        save_path = os.path.join(save_dir,image_name)
-        # if not os.path.exists(save_path):
-        util.save_image(image_numpy, save_path)
-
+        # save_dir = os.path.join(image_dir, 'img_fake_only', full_path_strs[-3], full_path_strs[-2])
+        # self.mkdir(save_dir)
         save_dir = os.path.join(image_dir, 'img_all', full_path_strs[-3], full_path_strs[-2])
         self.mkdir(save_dir)
+        #*********************************
+        label = 'real_A'
+        image_numpy = image_dict[label]
+        print(f"Minimum value in visualisation A: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
+        print(f"Maximum value in visualisation A: {np.max(image_numpy)}")
 
-        label = 'fake_B'
-        image_numpy = visuals[label]
         image_name = '%s_%s.png' % (name, label)
         save_path = os.path.join(save_dir, image_name)
         # if not os.path.exists(save_path):
         util.save_image(image_numpy, save_path)
 
+        label = 'real_B'
+        image_numpy = image_dict[label]
+        print(f"Minimum value in visualisation B: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
+        print(f"Maximum value invisualisation B: {np.max(image_numpy)}")
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        label = 'input_seg'
+        image_numpy = image_dict[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        label = 'seg_gamma1'
+        image_numpy = image_dict[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        label = 'seg_gamma2'
+        image_numpy = image_dict[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        # *********************************
+        for key, value in image_dict['Visuals'].items():
+            print(key,'&&&&&**&*&')
+            for i in range(0,1) :#self.opt.num_samples_uncertainty
+                label = f'{key}_{i}'
+                image_numpy = value[i]
+                image_name = '%s_%s.png' % (name, label)
+                save_path = os.path.join(save_dir, image_name)
+                # if not os.path.exists(save_path):
+                util.save_image(image_numpy, save_path)
+
+            if 'seg' not in key:
+                # label = f'{key}_var'
+                # var_map = image_dict['var_map']
+                # image_numpy = var_map[key]
+                # image_name = '%s_%s.png' % (name, label)
+                # save_path = os.path.join(save_dir, image_name)
+                # # if not os.path.exists(save_path):
+                # util.save_map(image_numpy, save_path)
+
+
+
+                label = f'{key}_uncertainty_map'
+                uncertainty_map = image_dict['Uncertainty_Map']
+                image_numpy = uncertainty_map[key]
+                image_name = '%s_%s.png' % (name, label)
+                save_path = os.path.join(save_dir, image_name)
+                # if not os.path.exists(save_path):
+                util.save_map(image_numpy, save_path)
+
+            if  key =='seg_real':
+
+                label = f'{key}_heatmap'
+                heatmap = image_dict['Heatmap']
+                image_numpy = heatmap[key]
+                image_name = '%s_%s.png' % (name, label)
+                save_path = os.path.join(save_dir, image_name)
+                # if not os.path.exists(save_path):
+                util.save_image(image_numpy, save_path)
+
+                label = f'{key}_confidence_map'
+                confidence_map = image_dict['Confidence_Map']
+                image_numpy = confidence_map[key]
+                image_name = '%s_%s.png' % (name, label)
+                save_path = os.path.join(save_dir, image_name)
+                # if not os.path.exists(save_path):
+                # util.save_image(image_numpy, save_path)
+                util.save_map(image_numpy, save_path)
+
+                #
+                label = f'{key}_entropy_map'
+                entropy_map = image_dict['Entropy_Map']
+                image_numpy = entropy_map[key]
+                image_name = '%s_%s.png' % (name, label)
+                save_path = os.path.join(save_dir, image_name)
+                # if not os.path.exists(save_path):
+                # util.save_image(image_numpy, save_path)
+                util.save_map(image_numpy, save_path)
+                if key == 'fake_A' or key == 'fake_B' or key == 'seg_real':
+                    label = f'{key}_uncertainty_map'
+                    uncertainty_map = image_dict['Uncertainty_Map']
+                    image_numpy = uncertainty_map[key]
+                    image_name = '%s_%s.png' % (name, label)
+                    save_path = os.path.join(save_dir, image_name)
+                    # if not os.path.exists(save_path):
+                    util.save_map(image_numpy, save_path)
+
+
+
+
+
+
+
+    # save image to the disk
+    def save_images_to_dir(self, image_dir, visuals, image_paths_A, image_paths_B, image_paths_seg):
+        print('I am in save image')
+        short_path = ntpath.basename(image_paths_A[0])
+        # name_A = os.path.splitext(short_path)[0]
+        name = os.path.splitext(short_path)[0]
+        full_path_strs = image_paths_A[0].split('/')
+
+        # save_dir = os.path.join(image_dir, 'img_fake_only', full_path_strs[-3], full_path_strs[-2])
+        # self.mkdir(save_dir)
+        #
+        # label = 'fake_B'
+        # image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name, label)
+        # save_path = os.path.join(save_dir,image_name)
+        # # if not os.path.exists(save_path):
+        # util.save_image(image_numpy, save_path)
+
+        save_dir = os.path.join(image_dir)#, 'img_all', full_path_strs[-3], full_path_strs[-2]
+        self.mkdir(save_dir)
+
+        label = 'fake_B'
+        image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name_A, label)
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        print(save_path)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+        # #
         label = 'real_A'
         image_numpy = visuals[label]
         print(f"Minimum value in visualisation A: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
@@ -179,7 +236,7 @@ class Visualizer():
         save_path = os.path.join(save_dir,image_name)
         # if not os.path.exists(save_path):
         util.save_image(image_numpy, save_path)
-
+        #
         label = 'real_B'
         image_numpy = visuals[label]
         print(f"Minimum value in visualisation B: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
@@ -188,13 +245,13 @@ class Visualizer():
         save_path = os.path.join(save_dir,image_name)
         # if not os.path.exists(save_path):
         util.save_image(image_numpy, save_path)
-
+        #
         label = 'fake_A'
         image_numpy = visuals[label]
         image_name = '%s_%s.png' % (name, label)
         save_path = os.path.join(save_dir,image_name)
-        # if not os.path.exists(save_path):
-        util.save_image(image_numpy, save_path)
+        if not os.path.exists(save_path):
+            util.save_image(image_numpy, save_path)
 
         label = 'rec_A'
         image_numpy = visuals[label]
@@ -210,26 +267,32 @@ class Visualizer():
         # if not os.path.exists(save_path):
         util.save_image(image_numpy, save_path)
 
-        # label = 'fake_seg'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir, image_name)
-        # #if not os.path.exists(save_path):
-        # util.save_image(image_numpy, save_path)
+        label = 'fake_seg'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        #if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        # short_path = ntpath.basename(image_paths_B[0])
+        # name_B = os.path.splitext(short_path)[0]
+        # full_path_strs = image_paths_B[0].split('/')
+
+        label = 'real_seg'
+        image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name_B, label)
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        print(save_path)
+        #if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
         #
-        # label = 'real_seg'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir, image_name)
-        # #if not os.path.exists(save_path):
-        # util.save_image(image_numpy, save_path)
-        #
-        # label = 'input_seg'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir, image_name)
-        # #if not os.path.exists(save_path):
-        # util.save_image(image_numpy, save_path)
+        label = 'input_seg'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        #if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
 
         print('I am out of visoualizer')
 
@@ -278,3 +341,149 @@ class Visualizer():
         save_path = os.path.join(save_dir,image_name)
         if not os.path.exists(save_path):
             util.save_image(image_numpy, save_path)
+
+
+    def save_cycle_gan_images_to_dir(self, image_dir, visuals, image_paths_A, image_paths_B):
+        print('I am in save image')
+        short_path = ntpath.basename(image_paths_A[0])
+        # name_A = os.path.splitext(short_path)[0]
+        name = os.path.splitext(short_path)[0]
+        full_path_strs = image_paths_A[0].split('/')
+
+        # save_dir = os.path.join(image_dir, 'img_fake_only', full_path_strs[-3], full_path_strs[-2])
+        # self.mkdir(save_dir)
+        #
+        # label = 'fake_B'
+        # image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name, label)
+        # save_path = os.path.join(save_dir,image_name)
+        # # if not os.path.exists(save_path):
+        # util.save_image(image_numpy, save_path)
+
+        save_dir = os.path.join(image_dir)#, 'img_all', full_path_strs[-3], full_path_strs[-2]
+        self.mkdir(save_dir)
+
+        label = 'fake_B'
+        image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name_A, label)
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        print(save_path)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+        #
+        label = 'real_A'
+        image_numpy = visuals[label]
+        print(f"Minimum value in visualisation A: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
+        print(f"Maximum value in visualisation A: {np.max(image_numpy)}")
+
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+        #
+        label = 'real_B'
+        image_numpy = visuals[label]
+        print(f"Minimum value in visualisation B: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
+        print(f"Maximum value invisualisation B: {np.max(image_numpy)}")
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+        #
+        label = 'fake_A'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        if not os.path.exists(save_path):
+            util.save_image(image_numpy, save_path)
+
+        label = 'rec_A'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        label = 'rec_B'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+        #
+
+
+        print('I am out of visoualizer')
+
+    def save_cycle_gan_images_to_dir_uncertainty(self, cycle_output_dir, visuals, img_path):
+        print('hello save_cycle_gan_images_to_dir_uncertainty function')
+
+
+
+    def save_val_images_to_dir(self, image_dir, visuals, epoch,val_num):
+        print('I am in save image')
+        name = f'{epoch}_{val_num}'
+
+        save_dir = os.path.join(image_dir)
+        self.mkdir(save_dir)
+
+        label = 'fake_B'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        print(save_path)
+        util.save_image(image_numpy, save_path)
+        # #
+        # label = 'real_A'
+        # image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name, label)
+        # save_path = os.path.join(save_dir,image_name)
+        # util.save_image(image_numpy, save_path)
+        # #
+        # label = 'real_B'
+        # image_numpy = visuals[label]
+        # image_name = '%s_%s.png' % (name, label)
+        # save_path = os.path.join(save_dir,image_name)
+        # util.save_image(image_numpy, save_path)
+        #
+        label = 'fake_A'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        util.save_image(image_numpy, save_path)
+
+        label = 'rec_A'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        util.save_image(image_numpy, save_path)
+
+        label = 'rec_B'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir,image_name)
+        util.save_image(image_numpy, save_path)
+
+        label = 'fake_seg'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        util.save_image(image_numpy, save_path)
+
+
+        label = 'real_seg'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        print(save_path)
+        util.save_image(image_numpy, save_path)
+
+        label = 'input_seg'
+        image_numpy = visuals[label]
+        image_name = '%s_%s.png' % (name, label)
+        save_path = os.path.join(save_dir, image_name)
+        # if not os.path.exists(save_path):
+        util.save_image(image_numpy, save_path)
+
+        print('I am out of visoualizer')
