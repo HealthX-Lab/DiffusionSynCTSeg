@@ -10,18 +10,49 @@ import collections
 # Converts a Tensor into a Numpy array
 # |imtype|: the desired type of the converted numpy array
 def tensor2im(image_tensor, imtype=np.uint8):
-
-    print('image_tensor',np.shape(image_tensor))
     image_numpy = image_tensor[0].cpu().float().numpy()
-    print('image_numpy', np.shape(image_numpy))
-    image_numpy = (np.transpose(image_numpy, (1, 2, 3, 0)) + 1) / 2.0 * 255.0
+    min_val = np.min(image_numpy)
+    max_val = np.max(image_numpy)
+
+    print(f"Minimum value: {min_val}  shape:{np.shape(image_numpy)}")
+    print(f"Maximum value: {max_val}")
+    # image_numpy = (image_numpy- min_val) / (max_val - min_val)
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0))) * 255.0
+
+    
+
+    return image_numpy.astype(imtype)
+
+
+def tensor2im_real(image_tensor, imtype=np.uint8):
+    image_numpy = image_tensor[0].cpu().float().numpy()
+    min_val = np.min(image_numpy)
+    max_val = np.max(image_numpy)
+
+    print(f"Minimum value in real: {min_val}  shape:{np.shape(image_numpy)}")
+    print(f"Maximum value in real: {max_val}")
+    image_numpy = (np.transpose(image_numpy, (1, 2, 0)))*255
+
+    print(f"Minimum value in real after 255: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
+    print(f"Maximum value in real after 255: {np.max(image_numpy)}")
+    #
+    uint_image = image_numpy.astype(imtype)
+    #
+    print(f"Minimum value in real after uint: {np.min(uint_image)}  shape:{np.shape(uint_image)}")
+    print(f"Maximum value in real after uint: {np.max(uint_image)}")
+
+
     return image_numpy.astype(imtype)
 
 def tensor2seg(image_tensor, imtype=np.uint8):
-    print('image_tensor', np.shape(image_tensor))
     image_numpy = image_tensor[0].cpu().float().numpy()
-    print('image_numpy', np.shape(image_numpy))
-    image_numpy = np.transpose(image_numpy, (1, 2, 3, 0)) *20
+    min_val = np.min(image_numpy)
+    max_val = np.max(image_numpy)
+
+    print(f" seg Minimum value: {min_val}  shape:{np.shape(image_numpy)}")
+    print(f"seg Maximum value: {max_val}")
+    image_numpy = np.transpose(image_numpy, (1, 2, 0)) *100
     return image_numpy.astype(imtype)
 
 def diagnose_network(net, name='network'):
@@ -38,10 +69,17 @@ def diagnose_network(net, name='network'):
 
 
 def save_image(image_numpy, image_path):
+    print(f"Minimum value in util save image: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
+    print(f"Maximum value util save image: {np.max(image_numpy)}")
+
+
     if (len(image_numpy.shape)>2):
         image_pil = Image.fromarray(image_numpy[:,:,0])
     else:
         image_pil = Image.fromarray(image_numpy)
+
+    print(f"Minimum value in util save image after form array: {np.min(image_pil)}  shape:{np.shape(image_pil)}")
+    print(f"Maximum value util save image after form array: {np.max(image_pil)}")
     image_pil.save(image_path)
 
 def info(object, spacing=10, collapse=1):

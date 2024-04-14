@@ -142,6 +142,7 @@ if [[ $level_flag == 1 ]]; then
       flirt -in $image_name -ref $mni_image -out $full_image_name_registered -omat $full_image_name_registered_mat
       flirt -in $label_name -ref $mni_image -init $full_image_name_registered_mat -applyxfm -out $full_label_name_registered -interp nearestneighbour
 
+      fslmaths $full_image_name_registered -histmatch $mni_image $full_image_name_registered
 
 fi
 
@@ -200,6 +201,10 @@ if [[ $level_flag == 2 ]]; then
 	    Resampled_image_path="$resampled_ct_path$image_basename"
 	   	echo '$Resampled_image_path ' $Resampled_image_path
       flirt -in $ct_image_name -ref $template_ct_path -out $Resampled_image_path -applyxfm -init $matrix_image_path -datatype int
+
+      fslmaths $Resampled_image_path -histmatch $template_ct_path $Resampled_image_path
+
+
 fi
 
 
@@ -253,6 +258,11 @@ if [[ $level_flag == 4 ]]; then
 
       flirt -in $MRI_image_name -ref $mni_image -out $full_MRI_name_registered -omat $full_MRI_name_registered_mat
       flirt -in $CT_image_name -ref $mni_image -init $full_MRI_name_registered_mat -applyxfm -out $full_CT_name_registered
+
+
+      fslmaths $full_MRI_name_registered -histmatch $mni_image $full_MRI_name_registered
+
+      fslmaths $full_CT_name_registered -histmatch $mni_image $full_CT_name_registered
 
 
 fi
@@ -340,6 +350,8 @@ if [[ $level_flag == 5 ]]; then
       cd /home/rtm/scratch/rtm/ms_project/domain_adaptation_CTscan/scripts
       rm -rf $TDIR
 fi
+
+
 
 
 
