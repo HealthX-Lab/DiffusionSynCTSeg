@@ -204,22 +204,10 @@ class TestModel(BaseModel):
                 while lower entropy indicates lower uncertainty.'''
                 entropy_map[key] = self.compute_entropy(mean[key])
                 if key == 'seg_real':
-                    if self.number_of_images < 35:
-                        self.cal_manual_dice(outputs[key])
-                        self.cal_manual_iou(outputs[key])
-                    else:
-                        self.tn1, self.fp1, self.fn1, self.tp1 = [65536,0,0,0]
-                        self.tn2, self.fp2, self.fn2, self.tp2 = [65536,0,0,0]
-                        self.mean_pure_dice = self.mean_dice_gamma_1 = self.mean_dice_gamma_2 = torch.tensor(1.0,
-                                                                                                             dtype=torch.float32).item()
-                        self.one_pure_dice = self.one_dice_gamma_1 = self.one_dice_gamma_2 = torch.tensor(1.0,
-                                                                                                          dtype=torch.float32).item()
-                        self.mean_pure_iou = self.mean_iou_gamma_1 = self.mean_iou_gamma_2 = torch.tensor(1.0,
-                                                                                                          dtype=torch.float32)
-                        self.one_pure_iou = self.one_iou_gamma_1 = self.one_iou_gamma_2 = torch.tensor(1.0,
-                                                                                                       dtype=torch.float32)
+                    self.cal_manual_dice(outputs[key])
+                    self.cal_manual_iou(outputs[key])
 
-                # print('*******************************************************')
+
             else:
                 uncertainty_map[key] = var[key].sqrt()[0]
 
@@ -252,8 +240,8 @@ class TestModel(BaseModel):
 
             self.mean, self.var, self.heatmap, self.uncertainty_map, self.confidence_map, self.entropy_map= self.compute_output(outputs)
             self.model_images = outputs
-            if self.number_of_images < 30:
-                self.set_image(self.number_of_images, self.crop_images(self.mean['seg_real']))
+
+            self.set_image(self.number_of_images, self.crop_images(self.mean['seg_real']))
             self.set_coef()
             if self.number_of_images % 41 == 40:
                 self.set_3Dcoef()

@@ -217,8 +217,7 @@ class CycleSEGModel(BaseModel):
                 self.load_network(self.netD_A, 'D_A', which_epoch)
                 self.load_network(self.netD_B, 'D_B', which_epoch)
                 self.load_network(self.netG_seg, 'Seg_A', which_epoch)
-                # if opt.seg_rec_loss or opt.seg_fakeMRI_realCT_loss:
-                #     self.load_network(self.netG_seg_mri, 'Seg_A_mri', which_epoch)
+
 
 
                     # just_train_seg = True
@@ -254,7 +253,6 @@ class CycleSEGModel(BaseModel):
                 size = opt.fineSize
                 self.input_Seg_one = self.Tensor(size=(nb, 1, Depth, size, size))
                 self.fake_B_3d = self.Tensor(nb, 1, Depth, size, size)
-                # self.real_B_3d = self.Tensor(nb, 1, Depth, size, size)
                 self.input_B = self.Tensor(nb, 1, size, size)
 
             self.criterionCycle = torch.nn.L1Loss()
@@ -272,10 +270,7 @@ class CycleSEGModel(BaseModel):
             if not self.opt.separate_segmentation:
                 self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG_A.parameters(), self.netG_seg.parameters(), self.netG_B.parameters()),
                                                     lr=opt.lr, betas=(opt.beta1, 0.999), weight_decay=opt.weight_decay)#,amsgrad=True)
-                # if opt.seg_rec_loss or opt.seg_fakeMRI_realCT_loss:
-                #     self.optimizer_G = torch.optim.Adam(
-                #         itertools.chain(self.netG_A.parameters(), self.netG_seg.parameters(), self.netG_seg_mri.parameters(), self.netG_B.parameters()),
-                #         lr=opt.lr, betas=(opt.beta1, 0.999))
+
                 self.optimizer_D_A = torch.optim.Adam(self.netD_A.parameters(), lr=opt.lr_D, betas=(opt.beta1, 0.999), weight_decay=opt.weight_decay)#,amsgrad=True)
                 self.optimizer_D_B = torch.optim.Adam(self.netD_B.parameters(), lr=opt.lr_D, betas=(opt.beta1, 0.999), weight_decay=opt.weight_decay)#,amsgrad=True)
 
@@ -287,8 +282,6 @@ class CycleSEGModel(BaseModel):
                 self.optimizer_D_B = torch.optim.Adam(self.netD_B.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
                 self.optimizer_seg = torch.optim.Adam(self.netG_seg.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 
-            # if self.opt.ssim_fake_images_loss:
-            #     self.ssim_loss = ssim.SSIM()
 
 
 
@@ -378,19 +371,6 @@ class CycleSEGModel(BaseModel):
     def get_image_paths(self):
         return self.image_paths
 
-    # def gradient_penalty(self,discriminator, real_samples, fake_samples):
-    #     batch_size = real_samples.size(0)
-    #     # epsilon = torch.rand(batch_size, 1, 1, 1).to(device)
-    #     epsilon = torch.cuda.FloatTensor(batch_size, 1, 1, 1).uniform_()
-    #     interpolates = (epsilon * real_samples + (1 - epsilon) * fake_samples).requires_grad_(True)
-    #     d_interpolates = discriminator(interpolates).cuda()
-    #
-    #     gradients = torch.autograd.grad(outputs=d_interpolates, inputs=interpolates,
-    #                                     grad_outputs=torch.ones(d_interpolates.size(),device='cuda'),
-    #                                     create_graph=True, retain_graph=True)[0]
-    #     gradient_norm = gradients.view(batch_size, -1).norm(2, dim=1)
-    #     penalty = ((gradient_norm - 1) ** 2).mean()
-    #     return penalty
 
     def backward_D_basic(self, netD, real, fake):
         loss_D = 0
@@ -409,14 +389,6 @@ class CycleSEGModel(BaseModel):
             )[0]
             # print('***&*&',gradient_p)
             loss_D += gradient_p
-
-        # elif self.opt.Wasserstein_Lossy:
-        #     real_logits = netD.forward(real)
-        #     generated_logits = netD.forward(fake.detach())
-        #     loss_D = self.criterionGAN(real_logits, generated_logits, discriminator=True)
-        #     if self.opt.gradient_penalty:
-        #         gradient_penalty_loss = self.gradient_penalty(netD, real, fake)
-        #         loss_D = loss_D + self.opt.gradient_penalty_lambda * gradient_penalty_loss
 
         loss_D.backward()
         return loss_D
@@ -460,9 +432,7 @@ class CycleSEGModel(BaseModel):
 
         if not self.opt.Wasserstein_Lossy:
             self.loss_G_B = self.criterionGAN(pred_fake, True)  * self.opt.lambda_D
-        # elif self.opt.Wasserstein_Lossy:
-        #     self.loss_G_B = self.criterionGAN(generated_logits=pred_fake, discriminator=True)  * self.opt.lambda_D
-        # Forward cycle loss
+
         self.rec_A = self.netG_B.forward(self.fake_B)
         self.loss_cycle_A = self.criterionCycle(self.rec_A, self.real_A) * lambda_A
         # Backward cycle loss
@@ -534,7 +504,6 @@ class CycleSEGModel(BaseModel):
             if self.opt.mode == '2d':
                 arr = np.array(self.opt.crossentropy_weight)
                 weight = torch.from_numpy(arr).cuda().float()
-                # print('self.seg_fake_B, self.real_Seg_one',self.seg_fake_B.shape, self.real_Seg_one.shape)
                 self.loss_seg = CrossEntropy2d(self.seg_fake_B, self.real_Seg_one, weight=weight) * self.opt.weight_segmentation_in_GAN
                 if self.opt.MRI_CT_segmentation:
                     self.seg_real_A = self.netG_seg.forward(self.real_A)
@@ -556,7 +525,6 @@ class CycleSEGModel(BaseModel):
             dice_loss = self.loss_seg
             arr = np.array(self.opt.crossentropy_weight)
             weight = torch.from_numpy(arr).cuda().float()
-            # print('self.seg_fake_B, self.real_Seg_one',self.seg_fake_B.shape, self.real_Seg_one.shape)
             CE_loss = CrossEntropy2d(self.seg_fake_B, self.real_Seg_one, weight=weight)
 
             self.loss_seg = 1.0 * CE_loss + 0.2 * dice_loss
@@ -564,80 +532,19 @@ class CycleSEGModel(BaseModel):
         if self.opt.boundry_loss:
             self.boundry_seg_loss = self.surface_loss(F.softmax(self.seg_fake_B, dim=1),self.dist_map_label.cuda())/20.0
             b_weight = self.opt.boundry_loss_weight
-            # print('CE loss',self.loss_seg)
-            self.loss_seg = self.loss_seg +  self.boundry_seg_loss
-            # print('****, boundry , combination ',self.boundry_seg_loss,self.loss_seg)
+            self.loss_seg = self.loss_seg +  self.boundry_seg_loss*b_weight
+
 
         self.loss_G = (self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A +
                        self.loss_idt_B  + self.loss_mind_A + self.loss_mind_B + self.loss_CC_A +
                        self.loss_CC_B)
         if not self.opt.separate_segmentation:
-            # print('self.loss_seg',self.loss_seg.item())
+
             self.loss_G +=  self.loss_seg
         if self.opt.which_model_netSeg =='swin':
             print('***',self.fake_B.shape, self.real_A.shape,  self.real_Seg_one.shape)
             self.fake_B = F.interpolate(self.fake_B, size=(256, 256), mode='bilinear', align_corners=False)
             self.real_A = F.interpolate(self.real_A, size=(256, 256), mode='bilinear', align_corners=False)
-
-
-        #
-        # if self.opt.ssim_fake_images_loss:
-        #     self.loss_ssim_B = (1 - self.ssim_loss(self.fake_B, self.real_B)) * self.opt.weight_ssim_loss
-        #     self.loss_ssim_A = (1 - self.ssim_loss(self.fake_A, self.real_A)) * self.opt.weight_ssim_loss
-        #     # print('ssim_A, ssim_B', ssim_A, ssim_B)
-        #     self.loss_G += (self.loss_ssim_B + self.loss_ssim_A)
-
-        # if self.opt.seg_discriminator:
-
-        # print('data_number: ',data_number)
-        # if data_number % 5 ==0:
-        #     self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B +  self.opt.weight_segmentation_in_GAN*self.loss_seg
-        # else:
-        #     self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B
-
-        # elif  self.opt.separate_segmentation:
-        #     self.loss_G = self.loss_G_A + self.loss_G_B + self.loss_cycle_A + self.loss_cycle_B + self.loss_idt_A + self.loss_idt_B
-        #     self.loss_seg.backward()
-
-
-        # elif self.opt.seg_rec_loss:
-        #     self.seg_rec_A = self.netG_seg_mri.forward(self.rec_A)
-        #     arr = np.array(self.opt.crossentropy_weight)
-        #     weight = torch.from_numpy(arr).cuda().float()
-        #
-        #     self.loss_seg_mri = CrossEntropy2d(self.seg_rec_A, self.real_Seg_one, weight=weight)
-        #
-        #     self.loss_G = self.opt.weight_segmentation_in_GAN*self.loss_seg_mri + self.loss_G
-        #
-        # elif self.opt.seg_fakeMRI_realCT_loss:
-        #     self.seg_rec_A = self.netG_seg_mri.forward(self.rec_A)
-        #     self.seg_real_A = self.netG_seg_mri.forward(self.real_A)
-        #     self.seg_fake_A = self.netG_seg_mri.forward(self.fake_A)
-        #     self.seg_real_B = self.netG_seg.forward(self.real_B)
-        #
-        #     arr = np.array(self.opt.crossentropy_weight)
-        #     weight = torch.from_numpy(arr).cuda().float()
-        #     self.loss_seg_real_mri = CrossEntropy2d(self.seg_real_A, self.real_Seg_one, weight=weight)
-        #     self.loss_seg_rec_mri = CrossEntropy2d(self.seg_rec_A, self.real_Seg_one, weight=weight)
-        #
-        #     self.loss_seg_fake_mri_real_CT = dice_loss_norm(self.seg_rec_A, self.seg_real_B)
-        #
-        #     self.loss_G = self.opt.weight_segmentation_in_GAN*( self.loss_seg_rec_mri + self.loss_seg_real_mri) + self.loss_seg_fake_mri_real_CT*10 + self.loss_G
-        #
-        #
-        # if self.opt.perceptual_loss:
-        #     self.p_loss = compute_perceptual_loss(self.fake_B, self.real_B, self.netD_A)
-        #     print('p_loss',self.p_loss)
-        #     self.loss_G = self.loss_G + self.p_loss
-        #
-        # if self.opt.direct_loss:
-        #     # Forward direct loss
-        #     self.cycled_A = self.netG_A.forward(self.fake_B)
-        #     self.loss_cycled_A = self.criterionCycle(self.cycled_A, self.real_A) #* lambda_A
-        #     # print('self.loss_cycled_A : ',self.loss_cycled_A )
-        #     self.cycled_B = self.netG_B.forward(self.fake_A)
-        #     self.loss_cycled_B = self.criterionCycle(self.cycled_B, self.real_B)  # * lambda_B
-        #     self.loss_G = self.loss_G + self.loss_cycled_B + self.loss_cycled_A
 
 
         self.loss_G.backward()
@@ -709,12 +616,7 @@ class CycleSEGModel(BaseModel):
             idt_B = self.loss_idt_B.item()
             error_list.append(('idt_B', idt_B))
             error_list.append(('idt_A', idt_A))
-            # return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A), ('idt_A', idt_A),
-            #                     ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B), ('idt_B', idt_B), ('Seg', Seg_B)])
-        # else:
-        #     return OrderedDict([('D_A', D_A), ('G_A', G_A), ('Cyc_A', Cyc_A),
-        #                         ('D_B', D_B), ('G_B', G_B), ('Cyc_B', Cyc_B),
-        #                         ('Seg', Seg_B)])
+
         if self.opt.seg_rec_loss:
             loss_seg_rec_mri = self.loss_seg_mri.item()
             error_list.append(('seg_rec_mri', loss_seg_rec_mri))
@@ -728,9 +630,6 @@ class CycleSEGModel(BaseModel):
             error_list.append(('loss_cycled_A', self.loss_cycled_A.item()))
             error_list.append(('loss_cycled_B', self.loss_cycled_B.item()))
 
-        # if self.opt.ssim_fake_images_loss:
-        #     error_list.append(('ssim_A', self.loss_ssim_A.item()))
-        #     error_list.append(('ssim_B', self.loss_ssim_B.item()))
         if self.opt.MIND_loss:
             error_list.append(('mind_A', self.loss_mind_A.item()))
             error_list.append(('mind_B', self.loss_mind_B.item()))
@@ -757,11 +656,7 @@ class CycleSEGModel(BaseModel):
             idt_B = util.tensor2im(self.idt_B.data)
             visual_list.append(('idt_A', idt_A))
             visual_list.append(('idt_B', idt_B))
-        #     return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A), ('idt_B', idt_B),
-        #                         ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B), ('idt_A', idt_A)])
-        # else:
-        #     return OrderedDict([('real_A', real_A), ('fake_B', fake_B), ('rec_A', rec_A), ('seg_B',seg_B), ('manual_B',manual_B),
-        #                         ('real_B', real_B), ('fake_A', fake_A), ('rec_B', rec_B)])
+
         if self.opt.seg_rec_loss:
             seg_rec_mri = util.tensor2seg(torch.max(self.seg_rec_A.data, dim=1, keepdim=True)[1])
             visual_list.append(('seg_rec_mri', seg_rec_mri))
@@ -880,15 +775,10 @@ class CycleSEGModel(BaseModel):
             input_A = input['A' if AtoB else 'B']
             input_B = input['B' if AtoB else 'A']
             input_Seg = input['Seg']
-            # print('input_Seg', input_Seg.shape, '*****')
             self.input_A_val.resize_(input_A.size()).copy_(input_A)
             self.input_B_val.resize_(input_B.size()).copy_(input_B)
             self.input_Seg_val.resize_(input_Seg.size()).copy_(input_Seg)
-            # self.image_paths_val = input['A_paths' if AtoB else 'B_paths']
-            # if self.opt.seg_norm == 'CrossEntropy' or self.opt.seg_norm == 'CombinationLoss':
-            #     self.input_Seg_one_val = self.Tensor(v_batch, self.opt.output_nc, size, size)
-            #     input_Seg_one = input['Seg_one']
-            #     self.input_Seg_one_val.resize_(input_Seg_one.size()).copy_(input_Seg_one)
+
 
 
             self.real_A_val = Variable(self.input_A_val)
@@ -910,19 +800,13 @@ class CycleSEGModel(BaseModel):
                 self.fake_B_val = F.interpolate(self.fake_B_val, size=(256, 256), mode='bilinear', align_corners=False)
                 self.real_B_val = F.interpolate(self.real_B_val, size=(256, 256), mode='bilinear', align_corners=False)
 
-            # print('***** ',self.real_A_val.shape, self.fake_A_val.shape)
 
-            #
-            # if self.opt.identity > 0:
-            #     self.idt_A_val = self.netG_A.forward(self.real_B_val)
-            #     self.idt_B_val = self.netG_B.forward(self.real_A_val)
 
 
 
 
     def get_val_images(self):
-        # print('real_A_val',self.real_A_val.shape)
-        # print('self.fake_B_val',self.fake_B_val.shape)
+
         real_A_val = util.tensor2im(self.real_A_val.data)
         fake_B_val = util.tensor2im(self.fake_B_val.data)
         seg_fake_val = util.tensor2seg(torch.max(self.seg_fake_B_val.data,dim=1,keepdim=True)[1])
@@ -935,11 +819,7 @@ class CycleSEGModel(BaseModel):
         visual_list_val = [('real_A', real_A_val), ('fake_B', fake_B_val), ('rec_A', rec_A_val),
                                 ('real_B', real_B_val), ('fake_A', fake_A_val), ('rec_B', rec_B_val),
                            ('input_seg',input_Seg_val),('fake_seg',seg_fake_val), ('real_seg',seg_real_val)]
-        # if self.opt.identity > 0.0:
-        #     idt_A_val = util.tensor2im(self.idt_A_val.data)
-        #     idt_B_val = util.tensor2im(self.idt_B_val.data)
-        #     visual_list_val.append(('idt_A', idt_A_val))
-        #     visual_list_val.append(('idt_B', idt_B_val))
+
 
         return  OrderedDict(visual_list_val)
 
