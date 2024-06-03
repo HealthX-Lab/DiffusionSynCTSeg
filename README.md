@@ -3,7 +3,7 @@
 Efficient and accurate brain ventricle segmentation from clinical CT scans is critical for emergency surgeries like ventriculostomy. Our project introduces a novel uncertainty-aware ventricle segmentation technique that leverages diffusion-model-based domain adaptation without the need for CT segmentation ground truths. This method employs the diffusion Schrödinger Bridge and an attention recurrent residual U-Net to utilize unpaired CT and MRI scans for automatic CT segmentation, demonstrating significant improvement over traditional methods. For detailed insights, you can read our paper: [CT-based brain ventricle segmentation via
 diffusion Schr¨odinger Bridge without target domain ground truths](https://arxiv.org/pdf/2405.18267)
 
-![Model Overview]([https://drive.google.com/file/d/1z9td7qahK5NjRFTrI0RLLJmRDSZTB8Xe/view?usp=drive_link](https://drive.google.com/file/d/1z9td7qahK5NjRFTrI0RLLJmRDSZTB8Xe/view?usp=sharing))
+![Model Overview]([https://drive.google.com/file/d/1z9td7qahK5NjRFTrI0RLLJmRDSZTB8Xe/view?usp=drive_link](https://drive.google.com/file/d/1z9td7qahK5NjRFTrI0RLLJmRDSZTB8Xe/view?usp=sharing)
 
 ## Challenges
 CT scans lack well-annotated public databases, unlike MRI scans. This makes it difficult to develop robust brain segmentation algorithms. Additionally, CT scans suffer from poor soft tissue contrast, which complicates accurate brain ventricle segmentation. These limitations hinder the development of reliable deep learning models for clinical use, leading to suboptimal outcomes in critical medical procedures like ventriculostomy.
