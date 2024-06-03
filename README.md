@@ -10,9 +10,9 @@ To address these challenges, we developed an innovative end-to-end deep learning
 
 # Techniques and Models Used:
 ## Translation Models
-Cycle-Consistent Adversarial Networks (CycleGAN): [CycleGAN GitHub](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/tree/master)
-Contrastive Learning for Unpaired Image-to-Image Translation (CUT): [CUT GitHub](https://github.com/taesungp/contrastive-unpaired-translation)
-Unpaired Neural Schrödinger Bridge (UNSB): [UNSB GitHub](https://github.com/cyclomon/UNSB/tree/main)
+* Cycle-Consistent Adversarial Networks (CycleGAN): [CycleGAN GitHub](https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/tree/master)
+* Contrastive Learning for Unpaired Image-to-Image Translation (CUT): [CUT GitHub](https://github.com/taesungp/contrastive-unpaired-translation)
+* Unpaired Neural Schrödinger Bridge (UNSB): [UNSB GitHub](https://github.com/cyclomon/UNSB/tree/main)
 ## Segmentation Models
 Our segmentation phase employed an attention-based residual recurrent U-Net architecture, compared with traditional U-Net and ResNet. For more information on the base segmentation model, see [R2AU-Net](https://www.hindawi.com/journals/scn/2021/6625688/).
 ## Confidence Measures
