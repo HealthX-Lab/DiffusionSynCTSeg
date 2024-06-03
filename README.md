@@ -21,11 +21,11 @@ We incorporated Monte Carlo dropouts in both MRI-to-CT translation and CT segmen
 Our model's design is inspired by [SynSeg-Net](https://github.com/MASILab/SynSeg-Net), aimed at synthesizing and segmenting anatomical structures in medical imaging. Details on this inspiration can be found here: SynSeg-Net GitHub.
 
 # Dataset
-OASIS3: 200 CT scans
-NeuroMorphometrics: 68 MRIs from OASIS and ADNI3 with manual labels
-IXI: 63 MRIs
-In-house dataset: 67 CT scans
-CERMEPiDB-MRXFDG (iDB): 27 paired MRI and CT sets (Test)
+* OASIS3: 200 CT scans
+* NeuroMorphometrics: 68 MRIs from OASIS and ADNI3 with manual labels
+* IXI: 63 MRIs
+* In-house dataset: 67 CT scans
+* CERMEPiDB-MRXFDG (iDB): 27 paired MRI and CT sets (Test)
 ## Silver Ground Truths for iDB and IXI Datasets:
 Generated using multi-atlas label fusion and majority voting with the entire NeuroMorphometrics dataset as the atlas library with [ANTs Joint Label Fusion Method](https://github.com/ANTsX/ANTs/blob/master/Scripts/antsJointLabelFusion.sh)
 
