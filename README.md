@@ -5,7 +5,7 @@ diffusion Schr¨odinger Bridge without target domain ground truths](https://arxi
 # Challenges
 CT scans lack well-annotated public databases, unlike MRI scans. This makes it difficult to develop robust brain segmentation algorithms. Additionally, CT scans suffer from poor soft tissue contrast, which complicates accurate brain ventricle segmentation. These limitations hinder the development of reliable deep learning models for clinical use, leading to suboptimal outcomes in critical medical procedures like ventriculostomy.
 
-# Solution: Uncertainty-aware Domain Adaptation
+# Solution: 
 To address these challenges, we developed an innovative end-to-end deep learning technique that employs a diffusion model for MRI-to-CT domain adaptation without the need for CT segmentation ground truths. Our method leverages the more accessible MRI ground truth labels to synthesize accurate segmentation in unpaired CT scans. By employing the diffusion Schrödinger Bridge for high-fidelity unpaired MRI vs. CT translation and an attention recurrent residual U-Net for segmentation, we achieve improved accuracy and provide intuitive uncertainty measures for quality control. This joint learning framework of image translation and segmentation tasks offers significant benefits over traditional training approaches and GAN-based techniques.
 
 ## Techniques and Models Used:
