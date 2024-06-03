@@ -32,3 +32,6 @@ Generated using multi-atlas label fusion and majority voting with the entire Neu
 
 # Conclusion
 Our innovative approach aims to segment CT ventricles without ground truths, using only MRI and MRI labels. All labels for the test dataset and part of the training were created with the label fusion technique. This strategy enhances the reliability and applicability of CT-based segmentation in clinical settings.
+
+Acknowledgment
+We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fund number NFRFE-2020-00241.
