@@ -31,7 +31,7 @@ Generated using multi-atlas label fusion and majority voting with the entire Neu
 
 
 # Conclusion
-Our innovative approach aims to segment CT ventricles without ground truths, using only MRI and MRI labels. All labels for the test dataset and part of the training were created with the label fusion technique. This strategy enhances the reliability and applicability of CT-based segmentation in clinical settings.
+We developed a novel, uncertainty-aware, diffusion-based CT brain ventricle segmentation method that does not require expert labels in the target image modality. By utilizing the diffusion Schrödinger Bridge and combining joint image translation and segmentation training, our approach outperformed other methods in comprehensive comparisons.
 
-Acknowledgment
+Acknowledgment:
 We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fund number NFRFE-2020-00241.
