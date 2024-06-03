@@ -27,7 +27,7 @@ IXI: 63 MRIs
 In-house dataset: 67 CT scans
 CERMEPiDB-MRXFDG (iDB): 27 paired MRI and CT sets (Test)
 ## Silver Ground Truths for iDB and IXI Datasets:
-Generated using multi-atlas label fusion and majority voting with the entire NeuroMorphometrics dataset as the atlas library with ANTs Joint Label Fusion Method: (https://github.com/ANTsX/ANTs/blob/master/Scripts/antsJointLabelFusion.sh)
+Generated using multi-atlas label fusion and majority voting with the entire NeuroMorphometrics dataset as the atlas library with [ANTs Joint Label Fusion Method] (https://github.com/ANTsX/ANTs/blob/master/Scripts/antsJointLabelFusion.sh)
 
 
 # Conclusion
