@@ -1,56 +1,12 @@
 #!/bin/bash
 
-########################## MRI and label registration ##########################
-#level_flag = 1
-N4_atlas_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/N4BiasFieldCorrected/atlas/
-registered_atlas_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Neuromorphometric_registration/registration/image/
-registered_atlas_label_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Neuromorphometric_registration/registration/label/
-mni_image=/home/rtm/scratch/rtm/ms_project/data/icbm/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii
-mkdir -p $registered_atlas_path  $registered_atlas_label_path  $N4_atlas_path
-########################## CT preprocess ##########################
-#level_flag = 2
-Threshold_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Threshold/NCCT_ct/
-Gassuain_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Gassuain/NCCT_ct/
-BET_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/BET/NCCT_ct/
-Crop_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/Crop/NCCT_ct/
-registered_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/RegisteredImages/NCCT_ct/
-resampled_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/ResampleadImages/NCCT_ct/
-template_ct_path=/home/rtm/scratch/rtm/ms_project/data/CT_template/NCCT-template-affine-brain.nii.gz
-mkdir -p $Threshold_ct_path $Gassuain_ct_path $BET_ct_path $Crop_ct_path $registered_ct_path $resampled_ct_path
+# This script performs various preprocessing and registration tasks on MRI and CT images.
+# It supports MRI and label registration, CT preprocessing, CT registration to MRI, and MRI skull stripping using BEaST.
 
-########################## CT Windowing ##########################
-#level_flag = 3
-lower_bound=-100
-upper_bound=1000
-Window_ct_path=/home/rtm/scratch/rtm/data/final_dataset/iDB/CT/window_ct/
-mni_image=/home/rtm/scratch/rtm/ms_project/data/icbm/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii
-mkdir -p $Window_ct_path=
-
-########################## register CT images to MRI ##########################
-#level_flag = 4
-N4_MRI_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/iDB/N4_MRI/
-registered_MRI_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/iDB/Registered_MRI/
-registered_CT_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/iDB/Registered_CT/
-Window_ct_path=/home/rtm/scratch/rtm/data/MedImagepreprocess/iDB/Thereshold_CT/
-mni_image=/home/rtm/scratch/rtm/ms_project/data/icbm/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii
-mkdir -p $N4_MRI_path  $registered_MRI_path $registered_CT_path $Window_ct_path
-
-########################## beast skull stripping ##########################
-#level_flag = 5
-BEAST_PATH=/home/rtm/projects/def-xiaobird/Data/beast
-outputDir=/home/rtm/scratch/rtm/data/final_dataset/Neuromorphometrics/SkullStripped/beast
-template_PATH=/home/rtm/scratch/rtm/ms_project/data/icbm/mni_icbm152_nlin_sym_09c_minc2
-mkdir -p $outputDir
-
-
-
-
-
-
-echo 'paths file created'
-level_flag=0 # atlas images process
+# Initialize the level_flag variable
+level_flag=0
 # reading command line arguments
-while getopts "a:l:c:w:m:r:b:" OPT
+while getopts "a:l:c:m:r:b:" OPT
   do
 
   case $OPT in
@@ -70,12 +26,6 @@ while getopts "a:l:c:w:m:r:b:" OPT
    ct_image_name=$OPTARG
    level_flag=2
    echo '-c  CT' $ct_image_name
-
-   ;;
-    w) #ct_windowing
-   ct_image_name=$OPTARG
-   level_flag=3
-   echo '-w  CT ' $ct_image_name
 
    ;;
 
@@ -108,9 +58,19 @@ echo 'level_flag' $level_flag
 ########################## MRI and label registration ##########################
 if [[ $level_flag == 1 ]]; then
 
-      input_basename="$(basename -- $image_name)"
-      echo 'input_basename' $input_basename #OAS1_0202_MR1.nii
 
+      N4_atlas_path='path-to-save-N4-mri'
+      registered_atlas_path='path-to-save-registered-mri'
+      registered_atlas_label_path='path-to-save-registered-labels'
+      mni_image='path-to-icbm-template'
+      mkdir -p $registered_atlas_path  $registered_atlas_label_path  $N4_atlas_path
+
+
+      # Extract the basename of the MRI image
+      input_basename="$(basename -- $image_name)"
+      echo 'input_basename' $input_basename
+
+     # Apply N4 Bias Field Correction
      img_postfix='N4correct_'
 	   image_name_N4="$img_postfix$input_basename"
 	   full_image_name_N4="$N4_atlas_path$image_name_N4"
@@ -119,29 +79,33 @@ if [[ $level_flag == 1 ]]; then
       N4BiasFieldCorrection -d 3 -r 1 -b [200,2] -c [400x200x100x40,0.0] \
       -i $image_name -o $full_image_name_N4
 
-
+      # Register MRI to MNI space
       img_postfix='Registered_'
 	    image_basename="$img_postfix$input_basename"
 	    full_image_name_registered="$registered_atlas_path$image_basename"
 	   	echo '$full_image_name_registered ' $full_image_name_registered
 
-
+      # Generate transformation matrix filename
 	   	img_postfix='omat_'
 	   	input_basename_without_postfix=$(echo $input_basename | cut -d . -f 1 -)
 	    image_basename="$img_postfix$input_basename_without_postfix.mat"
 	    full_image_name_registered_mat="$registered_atlas_path$image_basename"
 	   	echo '$full_image_name_registered_mat ' $full_image_name_registered_mat
 
+	   	# Register label to MNI space using the same transformation matrix
 	   	img_postfix='Registered_'
 	   	label_basename="$(basename -- $label_name)"
 	    label_basename="$img_postfix$label_basename"
 	    full_label_name_registered="$registered_atlas_label_path$label_basename"
 	   	echo '$full_label_name_registered ' $full_label_name_registered
 
-
+      # Perform registration of MRI to MNI space and save the transformation matrix
       flirt -in $image_name -ref $mni_image -out $full_image_name_registered -omat $full_image_name_registered_mat
+
+      # Apply the transformation matrix to register the label to MNI space
       flirt -in $label_name -ref $mni_image -init $full_image_name_registered_mat -applyxfm -out $full_label_name_registered -interp nearestneighbour
 
+      # Histogram matching for MRI image to MNI template
       fslmaths $full_image_name_registered -histmatch $mni_image $full_image_name_registered
 
 fi
@@ -151,25 +115,40 @@ fi
 ########################## CT preprocess ##########################
 if [[ $level_flag == 2 ]]; then
 
+      #level_flag = 2
+      Threshold_ct_path='path-to-save-threshold-CT'
+      Gassuain_ct_path='path-to-save-Gaussian-CT'
+      BET_ct_path='path-to-save-skull-stripped-CT'
+      Crop_ct_path='path-to-save-brain-cropped-CT'
+      registered_ct_path='path-to-save-registered-CT'
+      resampled_ct_path='path-to-save-resampled-CT'
+      template_ct_path='path-to-CT-template'
+      mkdir -p $Threshold_ct_path $Gassuain_ct_path $BET_ct_path $Crop_ct_path $registered_ct_path $resampled_ct_path
+
+
+
+
+      # Extract the basename of the CT image
       ct_input_basename="$(basename -- $ct_image_name)"
       input_basename_without_postfix=$(echo $ct_input_basename| cut -d . -f 1 -)
       echo 'ct_input_basename' $ct_input_basename
 
+      # Apply thresholding to the CT image
       img_postfix='Threshold_'
 	    image_basename="$img_postfix$ct_input_basename"
 	    threshold_image_path="$Threshold_ct_path$image_basename"
 	   	echo 'threshold_image_path ' $threshold_image_path
 	   	ls -l $ct_image_name
-
       fslmaths  $ct_image_name -thr 0 -uthr 100 $threshold_image_path
 
+      # Apply Gaussian blur to the thresholded image
       img_postfix='Gassuain_'
 	    image_basename="$img_postfix$ct_input_basename"
 	    blur_image_path="$Gassuain_ct_path$image_basename"
 	   	echo 'blur_image_path ' $blur_image_path
       fslmaths $threshold_image_path -s 1 $blur_image_path
 
-
+      # Apply brain extraction (BET) to the blurred image
       img_postfix='SS_'
 	    image_basename="$img_postfix$input_basename_without_postfix"
 	    SS_image_path="$BET_ct_path$image_basename"
@@ -179,16 +158,19 @@ if [[ $level_flag == 2 ]]; then
 	   	echo '$SS_image_path  mask_SS_image_path' $SS_image_path  $mask_SS_image_path
       mask_SS_image_path="$SS_image_path$mask"
 
+      # Apply mask to crop the CT image
       img_postfix='crop_'
 	    image_basename="$img_postfix$ct_input_basename"
 	    cropped_image_path="$Crop_ct_path$image_basename"
 	   	echo 'cropped_image_path   mask_SS_image_path' $cropped_image_path  $mask_SS_image_path
       fslmaths $ct_image_name -mul $mask_SS_image_path $cropped_image_path
 
+      # Register the cropped CT image to the MNI template
       img_postfix='Registered_'
 	    image_basename="$img_postfix$ct_input_basename"
 	    Registered_image_path="$registered_ct_path$image_basename"
 
+	    # Generate the transformation matrix filename
 	    img_postfix='matrix_'
 	    matrix_postfix='.mat'
 	    image_basename="$img_postfix$input_basename_without_postfix$matrix_postfix"
@@ -196,83 +178,87 @@ if [[ $level_flag == 2 ]]; then
 	   	echo '$matrix_image_path Registered_image_path  ' $matrix_image_path  $Registered_image_path
 	   	flirt -in $cropped_image_path -ref $template_ct_path -out $Registered_image_path -omat $matrix_image_path -cost normmi
 
+      # Resample the CT image based on the transformation matrix
       img_postfix='Resampled_'
 	    image_basename="$img_postfix$ct_input_basename"
 	    Resampled_image_path="$resampled_ct_path$image_basename"
 	   	echo '$Resampled_image_path ' $Resampled_image_path
       flirt -in $ct_image_name -ref $template_ct_path -out $Resampled_image_path -applyxfm -init $matrix_image_path -datatype int
 
+      # Apply histogram matching to the resampled image
       fslmaths $Resampled_image_path -histmatch $template_ct_path $Resampled_image_path
 
-
 fi
 
 
 
-########################## CT Windowing ##########################
-if [[ $level_flag == 3 ]]; then
+########################## Register CT images to MRI ##########################
 
-      ct_input_basename="$(basename -- $ct_image_name)"
-      echo 'ct_input_basename' $ct_input_basename
-
-      img_postfix='window_'
-	    image_basename="$img_postfix$ct_input_basename"
-	    threshold_image_path="$Window_ct_path$image_basename"
-	   	echo 'threshold_image_path ' $threshold_image_path
-      fslmaths  $ct_image_name -thr $lower_bound -uthr $upper_bound $threshold_image_path
-fi
-
-
-########################## register CT images to MRI ##########################
+# Check if the level_flag is set to 4
 if [[ $level_flag == 4 ]]; then
 
-      MRI_input_basename="$(basename -- $MRI_image_name)"
-      echo 'MRI_input_basename' $MRI_input_basename
+    N4_MRI_path='path-to-save-N4-data'
+    registered_MRI_path='path-to-registered-MRI-data'
+    registered_CT_path='path-to-registered-CT-data'
+    mni_image=/home/rtm/scratch/rtm/ms_project/data/icbm/mni_icbm152_nlin_asym_09c_nifti/mni_icbm152_nlin_asym_09c/mni_icbm152_t1_tal_nlin_asym_09c.nii
+    mkdir -p $N4_MRI_path  $registered_MRI_path $registered_CT_path
 
-      img_postfix='N4correct_'
-	    image_name_N4="$img_postfix$MRI_input_basename"
-	    full_image_name_N4="$N4_atlas_path$image_name_N4"
-	    echo '$image_name ' $image_name ' $full_image_name_N4 ' $full_image_name_N4
+    # Extract the basename of the MRI image
+    MRI_input_basename="$(basename -- $MRI_image_name)"
+    echo 'MRI_input_basename: ' $MRI_input_basename
 
+    # N4 Bias Field Correction
+    img_postfix='N4correct_'
+    image_name_N4="$img_postfix$MRI_input_basename"
+    full_image_name_N4="$N4_atlas_path$image_name_N4"
+    echo 'MRI image: ' $MRI_image_name ' | N4 corrected image: ' $full_image_name_N4
 
-      N4BiasFieldCorrection -d 3 -r 1 -b [200,2] -c [400x200x100x40,0.0]  -i $image_name -o $full_image_name_N4
+    # Apply N4BiasFieldCorrection
+    N4BiasFieldCorrection -d 3 -r 1 -b [200,2] -c [400x200x100x40,0.0] -i $MRI_image_name -o $full_image_name_N4
 
-      img_postfix='Registered_'
-	    image_basename="$img_postfix$MRI_input_basename"
-	    full_MRI_name_registered="$registered_MRI_path$image_basename"
-	   	echo '$full_MRI_name_registered ' $full_MRI_name_registered
+    # Register MRI to MNI space
+    img_postfix='Registered_'
+    image_basename="$img_postfix$MRI_input_basename"
+    full_MRI_name_registered="$registered_MRI_path$image_basename"
+    echo 'Registered MRI: ' $full_MRI_name_registered
 
+    # Generate transformation matrix filename
+    img_postfix='omat_'
+    MRI_input_basename_without_postfix=$(echo $MRI_input_basename | cut -d . -f 1 -)
+    image_basename="$img_postfix$MRI_input_basename_without_postfix.mat"
+    full_MRI_name_registered_mat="$registered_MRI_path$image_basename"
+    echo 'Transformation matrix: ' $full_MRI_name_registered_mat
 
-	   	img_postfix='omat_'
-	   	MRI_input_basename_without_postfix=$(echo $MRI_input_basename | cut -d . -f 1 -)
-	    image_basename="$img_postfix$MRI_input_basename_without_postfix.mat"
-	    full_MRI_name_registered_mat="$registered_MRI_path$image_basename"
-	   	echo '$full_MRI_name_registered_mat ' $full_MRI_name_registered_mat
+    # Register CT to MNI space using the same transformation matrix
+    img_postfix='Registered_'
+    CT_basename="$(basename -- $CT_image_name)"
+    CT_basename="$img_postfix$CT_basename"
+    full_CT_name_registered="$registered_CT_path$CT_basename"
+    echo 'Registered CT: ' $full_CT_name_registered
 
-	   	img_postfix='Registered_'
-	   	CT_basename="$(basename -- $CT_image_name)"
-	    CT_basename="$img_postfix$CT_basename"
-	    full_CT_name_registered="$registered_CT_path$CT_basename"
-	   	echo '$full_CT_name_registered ' $full_CT_name_registered
+    # Perform registration of MRI to MNI space and save the transformation matrix
+    flirt -in $MRI_image_name -ref $mni_image -out $full_MRI_name_registered -omat $full_MRI_name_registered_mat
 
+    # Apply the transformation matrix to register the CT image to MNI space
+    flirt -in $CT_image_name -ref $mni_image -init $full_MRI_name_registered_mat -applyxfm -out $full_CT_name_registered
 
-      flirt -in $MRI_image_name -ref $mni_image -out $full_MRI_name_registered -omat $full_MRI_name_registered_mat
-      flirt -in $CT_image_name -ref $mni_image -init $full_MRI_name_registered_mat -applyxfm -out $full_CT_name_registered
-
-
-      fslmaths $full_MRI_name_registered -histmatch $mni_image $full_MRI_name_registered
-
-      fslmaths $full_CT_name_registered -histmatch $mni_image $full_CT_name_registered
-
+    # Histogram matching for MRI and CT images to MNI template
+    fslmaths $full_MRI_name_registered -histmatch $mni_image $full_MRI_name_registered
+    fslmaths $full_CT_name_registered -histmatch $mni_image $full_CT_name_registered
 
 fi
-
 
 
 
 
 ########################## beast skull stripping ##########################
 if [[ $level_flag == 5 ]]; then
+      BEAST_PATH='path-to-mri-data'
+      outputDir='output-folder'
+      template_PATH='path-to-the-ICBM-template'
+      mkdir -p $outputDir
+
+
       set -e
 
       mri_input_basename="$(basename -- $inputNII)"

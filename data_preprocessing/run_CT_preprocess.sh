@@ -1,14 +1,37 @@
 #!/bin/bash
 
-BASE_PATH=/home/rtm/scratch/rtm/ms_project/test/iDB
-target_ct_path=( $( ls -a ${BASE_PATH}/*ct.nii.gz))
+# This script preprocesses CT images using a specified Singularity image and a list of CT image paths.
+# Prompt the user to enter the base directory path containing the CT images
+
+echo "Please enter the base directory path containing the CT images:"
+read BASE_PATH
+
+# Check if the user entered a value
+if [ -z "$BASE_PATH" ]; then
+  echo "No base directory path entered. Exiting."
+  exit 1
+fi
+
+# Prompt the user to enter the path to the Singularity image
+echo "Please enter the path to the Singularity image:"
+read SINGULARITY_PATH
+
+# Check if the user entered a value
+if [ -z "$SINGULARITY_PATH" ]; then
+  echo "No Singularity image path entered. Exiting."
+  exit 1
+fi
 
 
+# Get the list of CT image paths
+target_ct_path=( $(ls -a ${BASE_PATH}/*ct.nii.gz))
+
+# Iterate over the CT image paths
 for i in $(seq ${#target_ct_path[@]}); do
     target_ct=${target_ct_path[i-1]}
 
-    echo $target_mri
-    neurogliaSubmit -I  /project/6055004/tools/singularity/khanlab-neuroglia-dwi-master-v1.4.1.simg   \
-      -j Regular /home/rtm/scratch/rtm/ms_project/domain_adaptation_CTscan/scripts/MedImageProcessing.sh   -c $target_ct
-
+    echo "Processing CT image: $target_ct"
+    neurogliaSubmit -I $SINGULARITY_PATH -j Regular ./MedImageProcessing.sh -c $target_ct
 done
+
+echo "Processing complete."
