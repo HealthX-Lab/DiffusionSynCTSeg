@@ -136,14 +136,6 @@ class Visualizer():
                 util.save_image(image_numpy, save_path)
 
             if 'seg' not in key:
-                # label = f'{key}_var'
-                # var_map = image_dict['var_map']
-                # image_numpy = var_map[key]
-                # image_name = '%s_%s.png' % (name, label)
-                # save_path = os.path.join(save_dir, image_name)
-                # # if not os.path.exists(save_path):
-                # util.save_map(image_numpy, save_path)
-
 
 
                 label = f'{key}_uncertainty_map'
@@ -205,17 +197,7 @@ class Visualizer():
         name = os.path.splitext(short_path)[0]
         full_path_strs = image_paths_A[0].split('/')
 
-        # save_dir = os.path.join(image_dir, 'img_fake_only', full_path_strs[-3], full_path_strs[-2])
-        # self.mkdir(save_dir)
-        #
-        # label = 'fake_B'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir,image_name)
-        # # if not os.path.exists(save_path):
-        # util.save_image(image_numpy, save_path)
-
-        save_dir = os.path.join(image_dir)#, 'img_all', full_path_strs[-3], full_path_strs[-2]
+        save_dir = os.path.join(image_dir)
         self.mkdir(save_dir)
 
         label = 'fake_B'
@@ -274,9 +256,7 @@ class Visualizer():
         #if not os.path.exists(save_path):
         util.save_image(image_numpy, save_path)
 
-        # short_path = ntpath.basename(image_paths_B[0])
-        # name_B = os.path.splitext(short_path)[0]
-        # full_path_strs = image_paths_B[0].split('/')
+
 
         label = 'real_seg'
         image_numpy = visuals[label]
@@ -350,22 +330,12 @@ class Visualizer():
         name = os.path.splitext(short_path)[0]
         full_path_strs = image_paths_A[0].split('/')
 
-        # save_dir = os.path.join(image_dir, 'img_fake_only', full_path_strs[-3], full_path_strs[-2])
-        # self.mkdir(save_dir)
-        #
-        # label = 'fake_B'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir,image_name)
-        # # if not os.path.exists(save_path):
-        # util.save_image(image_numpy, save_path)
 
-        save_dir = os.path.join(image_dir)#, 'img_all', full_path_strs[-3], full_path_strs[-2]
+        save_dir = os.path.join(image_dir)
         self.mkdir(save_dir)
 
         label = 'fake_B'
         image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name_A, label)
         image_name = '%s_%s.png' % (name, label)
         save_path = os.path.join(save_dir, image_name)
         print(save_path)
@@ -434,19 +404,7 @@ class Visualizer():
         save_path = os.path.join(save_dir, image_name)
         print(save_path)
         util.save_image(image_numpy, save_path)
-        # #
-        # label = 'real_A'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir,image_name)
-        # util.save_image(image_numpy, save_path)
-        # #
-        # label = 'real_B'
-        # image_numpy = visuals[label]
-        # image_name = '%s_%s.png' % (name, label)
-        # save_path = os.path.join(save_dir,image_name)
-        # util.save_image(image_numpy, save_path)
-        #
+
         label = 'fake_A'
         image_numpy = visuals[label]
         image_name = '%s_%s.png' % (name, label)

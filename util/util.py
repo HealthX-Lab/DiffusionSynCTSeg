@@ -31,10 +31,7 @@ def tensor2im(image_tensor, imtype=np.uint8):
     min_val = np.min(image_numpy)
     max_val = np.max(image_numpy)
 
-    # print(f"Minimum value in tensor2im : {min_val}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value in tensor2im : {max_val}")
     image_numpy = (image_numpy - min_val) / (max_val - min_val)
-    # image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
     image_numpy = (np.transpose(image_numpy, (1, 2, 0))) * 255.0
 
     return image_numpy.astype(imtype)
@@ -45,8 +42,6 @@ def tensor2realseg(image_tensor, imtype=np.uint8):
     min_val = np.min(image_numpy)
     max_val = np.max(image_numpy)
 
-    # print(f"Minimum value in tensor2im : {min_val}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value in tensor2im : {max_val}")
     image_numpy = (image_numpy - min_val) / (max_val - min_val)
     image_numpy = (np.transpose(image_numpy, (1, 2, 0))) * 255.0
     image_numpy = image_numpy[:, :, 1]
@@ -56,20 +51,7 @@ def tensor2realseg(image_tensor, imtype=np.uint8):
 
 def tensor2im_real(image_tensor, imtype=np.uint8):
     image_numpy = image_tensor[0].cpu().float().numpy()
-    min_val = np.min(image_numpy)
-    max_val = np.max(image_numpy)
-
-    # print(f"Minimum value in real: {min_val}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value in real: {max_val}")
     image_numpy = (np.transpose(image_numpy, (1, 2, 0))) * 255
-
-    # print(f"Minimum value in real after 255: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value in real after 255: {np.max(image_numpy)}")
-    #
-    uint_image = image_numpy.astype(imtype)
-    #
-    # print(f"Minimum value in real after uint: {np.min(uint_image)}  shape:{np.shape(uint_image)}")
-    # print(f"Maximum value in real after uint: {np.max(uint_image)}")
 
     return image_numpy.astype(imtype)
 
@@ -83,21 +65,7 @@ def tensor2map(image_tensor, imtype=np.uint8):
     min_val = float(np.min(image_numpy))
     max_val = float(np.max(image_numpy))
 
-    # print(f"Minimum value in map : {min_val}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value in map : {max_val}")
     image_numpy = (image_numpy - min_val) / (max_val - min_val)
-
-    min_val = np.min(image_numpy)
-    max_val = np.max(image_numpy)
-    # print("Data type:", image_numpy.dtype)
-
-    # print(f"Minimum value in map after normalization: {min_val}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value in map after normalization: {max_val}")
-    # image_numpy = (np.transpose(image_numpy, (1, 2, 0)) + 1) / 2.0 * 255.0
-    # non_zero_indices = np.nonzero(image_numpy)
-    # # Print non-zero elements
-    # print(image_numpy[non_zero_indices])
-
     image_numpy = (np.transpose(image_numpy, (1, 2, 0)))
 
     return image_numpy
@@ -122,12 +90,6 @@ def tensor2seg(image_tensor, imtype=np.uint8):
 
 def thresh2seg(image_tensor, imtype=np.uint8):
     image_numpy = image_tensor.float().numpy()
-
-    min_val = np.min(image_numpy)
-    max_val = np.max(image_numpy)
-
-    # print(f" seg Minimum value: {min_val}  shape:{np.shape(image_numpy)}")
-    # print(f"seg Maximum value: {max_val}")
     image_numpy = image_numpy * 100
     return image_numpy.astype(imtype)
 
@@ -146,24 +108,15 @@ def diagnose_network(net, name='network'):
 
 
 def save_image(image_numpy, image_path):
-    # print(f"Minimum value in util save image: {np.min(image_numpy)}  shape:{np.shape(image_numpy)}")
-    # print(f"Maximum value util save image: {np.max(image_numpy)}")
 
     if (len(image_numpy.shape) > 2):
         image_pil = Image.fromarray(image_numpy[:, :, 0])
     else:
         image_pil = Image.fromarray(image_numpy)
-
-    # print(f"Minimum value in util save image after form array: {np.min(image_pil)}  shape:{np.shape(image_pil)}")
-    # print(f"Maximum value util save image after form array: {np.max(image_pil)}")
     image_pil.save(image_path)
 
 
 def save_map(image_numpy, image_path):
-    # print(f"Minimum value in util save map:  shape:{np.shape(image_numpy)}")
-    #
-    # print(f"Minimum value in util save map: {np.min(image_numpy)}  ")
-    # print(f"Maximum value util save map: {np.max(image_numpy)} ",image_path)
 
     fig, ax = plt.subplots()
     cmap = plt.cm.get_cmap('RdYlGn_r')
@@ -172,7 +125,6 @@ def save_map(image_numpy, image_path):
     plt.savefig(image_path)
     plt.close()
 
-    # image_pil.save(image_path)
 
 
 def info(object, spacing=10, collapse=1):

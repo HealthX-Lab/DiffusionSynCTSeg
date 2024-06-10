@@ -44,13 +44,13 @@ class BaseOptions():
         self.parser.add_argument('--name', type=str, default='zero_centered_MIND_CC_cyclegan_segmentation',
                                  help='name of the experiment. It decides where to store samples and models')
         self.parser.add_argument('--test_seg_output_dir', type=str,
-                                 default='/home/rtm/scratch/model_outputs/Output_save/2D/final_models/MIND_CC_cyclegan_boundary_loss_segmentation',
+                                 default='./MIND_CC_cyclegan_boundary_loss_segmentation',
                                  help='save test sege output results')
 
         self.parser.add_argument('--dataset_mode', type=str, default='yh_seg',
                                  help='chooses how datasets are loadfed. [unaligned | aligned | single | yh | yh_seg| yh_test_seg | yh_seg]')
         self.parser.add_argument('--model', type=str, default='cycle_seg',
-                                 help='chooses which model to use. TestGANModel, cycle_gan, cycle_gan, test , | test_seg  |cycle_seg | mri_seg mri_test | finetune')
+                                 help='chooses which model to use. sb (for UNSB) | cut (for CUT model) |  cycle_seg (for cyclegan with segmentaiton) | TestGANModel | cycle_gan | test  | test_seg  | mri_seg | mri_test | finetune')
         self.parser.add_argument('--identity', type=float, default=0.5,
                                  help='use identity mapping. Setting identity other than 1 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set optidentity = 0.1')
         self.parser.add_argument('--lambda_D', type=float, default=1.0, help='weight for discriminator loss')
@@ -92,8 +92,8 @@ class BaseOptions():
                                  default=False, help='data between 0-1')
 
         self.parser.add_argument('--path_images', type=str,
-                                 default='/home/rtm/scratch/model_outputs/Output_save/final2D', help='')
-        self.parser.add_argument('--path_csv', type=str, default='/home/rtm/scratch/model_outputs/csvfiles/final2D',
+                                 default='./model_outputs/Output_save/final2D', help='')
+        self.parser.add_argument('--path_csv', type=str, default='./model_outputs/csvfiles/final2D',
                                  help='')
         self.parser.add_argument('--folder_name', type=str, default='new_data_preprocess', help='')
         self.parser.add_argument('--len_dataset', type=int, default=0, help=' len_dataset ')
@@ -132,18 +132,20 @@ class BaseOptions():
         self.parser.add_argument('--eval_batch', type=int, default=42, help='adding evaluation step')
 
         self.parser.add_argument('--MC_uncertainty', type=lambda x: bool(strtobool(x)), default='True',
-                                 help='mc in test')
-        self.parser.add_argument('--num_samples_uncertainty', type=int, default=2,
+                                 help='monte carlo dropout uncertainty')
+        self.parser.add_argument('--num_samples_uncertainty', type=int, default=10,
                                  help='nmber of images during test for calculating uncertainty')
         self.parser.add_argument('--weight_decay', type=float, default=0, help='l2 regularization 0 or 1e-5')
         self.parser.add_argument('--weight_segmentation_in_GAN', type=float, default=1,
-                                 help='weight of segmentation loss in GAN 0.00001')
+                                 help='weight of segmentation loss ')
 
         self.parser.add_argument('--segmentation_discriminator', type=bool, default=False,
-                                 help='adding lsegmentation discriminator')
+                                 help='adding loss segmentation discriminator')
         self.parser.add_argument('--just_segmentation', type=bool, default=False, help='just train segmentor')
-        self.parser.add_argument('--separate_segmentation', type=bool, default=False, help='just train segmentor')
-        self.parser.add_argument('--MRI_CT_segmentation', type=bool, default=False, help='just train segmentor')
+        self.parser.add_argument('--separate_segmentation', type=bool, default=False,
+                                 help='train translation and segmentation separately')
+        self.parser.add_argument('--MRI_CT_segmentation', type=bool, default=False,
+                                 help='train segmentaiton with mri and ct')
 
         self.parser.add_argument('--boundry_loss', type=bool, default=False,
                                  help='add boundry loss to the segmentation')
@@ -160,7 +162,7 @@ class BaseOptions():
         self.parser.add_argument('--perceptual_loss', type=bool, default=False, help=' adding perceptual loss in D_A')
         self.parser.add_argument('--direct_loss', type=bool, default=False, help=' adding direct loss in G_A and G_B')
 
-        self.parser.add_argument('--soft_real_fake', type=bool, default=False, help='add dropout to the net')
+        # self.parser.add_argument('--soft_real_fake', type=bool, default=False, help='')
         self.parser.add_argument('--Wasserstein_Lossy', type=bool, default=False, help='adding Wasserstein Loss')
         self.parser.add_argument('--Gaussian_Discriminator', type=bool, default=False,
                                  help='add Gaussian to the discriminator with high weights in the center')
@@ -253,10 +255,10 @@ class BaseOptions():
 
         # set gpu ids
         if len(self.opt.gpu_ids) > 0:
-            print('gpuuuuu', self.opt.gpu_ids)
+            print('gpu', self.opt.gpu_ids)
             torch.cuda.set_device(self.opt.gpu_ids[0])
         else:
-            print('cpuuuuu', self.opt.gpu_ids)
+            print('cpu', self.opt.gpu_ids)
 
         args = vars(self.opt)
 

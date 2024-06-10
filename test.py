@@ -52,14 +52,13 @@ params = [
     'yh_run_model': 'Test',
     'MC_uncertainty': 'True',
     'num_samples_uncertainty': 10,
-    'max_epoch': 58,
+    'max_epoch': 200,
     'print_images_with_uncertainty': 'False',
     'len_datase': 0,
     'folder_name': 'cyclegan_30',
     'attribute': '3D_dice',
     'path_csv': '/home/rtm/scratch/model_outputs/csvfiles/final_with_histogram',
     'path_images': '/home/rtm/scratch/model_outputs/Output_save/final_with_histogram',
-'epoch_list':[62,88]
 
 },
 ]
@@ -72,11 +71,7 @@ for param_dict in params:
         setattr(opt, key, val)
 
     args = vars(opt)
-    opt.MC_uncertainty = True
-    # opt.len_dataset = 83
-    opt.print_images_with_uncertainty = False
     opt.eval = True
-    opt.attribute = 'save_image3'
 
 
     print('------------ Options -------------')
@@ -84,11 +79,10 @@ for param_dict in params:
         print('%s: %s' % (str(k), str(v)))
     print('-------------- End ----------------')
 
-    # unpaired models
-    raw_MRI_dir = '/home/rtm/scratch/2D/MRI'
-    raw_MRI_seg_dir = '/home/rtm/scratch/2D/seg'
-    raw_CT_dir = '/home/rtm/scratch/2D/clip_min_max_preprocess'#'/home/rtm/scratch/2D/clip_min10_max200_std_preprocess/iDB'#'/home/rtm/scratch/2D/clip_min_max_preprocess/iDB'
-    sub_list_dir = '/home/rtm/scratch/2D/clip_m10_500_std_preprocess/sublists'
+    raw_MRI_dir = 'path-to-2D-MRI test dataset'
+    raw_MRI_seg_dir = 'path-to-2D-label test dataset'
+    raw_CT_dir = 'path-to-2D-CT test dataset'
+    sub_list_dir = 'path-to-2D-sublists test dataset'  # txt files that contain name of all 2D images with their paths
 
 
 
@@ -190,10 +184,6 @@ for param_dict in params:
             imglist_MRI, imglist_CT, imglist_seg = imglist_MRI[:len_dataset], imglist_CT[:len_dataset], imglist_seg[:len_dataset]
 
 
-        ##################
-        # imglist_MRI = imglist_MRI[0:41] + imglist_MRI[82:123] + imglist_MRI[533:574]
-        # imglist_CT = imglist_CT[0:41] + imglist_CT[82:123] + imglist_CT[533:574]
-        # imglist_seg = imglist_seg[0:41] + imglist_seg[82:123] + imglist_seg[533:574]
 
         # input the opt that we want
         opt.raw_MRI_dir = raw_MRI_dir
@@ -220,7 +210,7 @@ for param_dict in params:
 
         df = pd.DataFrame()
 
-        for epoch_number in range(59,62):#range(0,opt.max_epoch+2):#max_epoch+1
+        for epoch_number in range(0,opt.max_epoch+2):
             opt.which_epoch = epoch_number
             opt.test_seg_output_dir = f'{path_images}/{folder_name}/{opt.name}/{opt.attribute}/epoch_{epoch_number}'
             cycle_output_dir = opt.test_seg_output_dir
@@ -382,13 +372,7 @@ for param_dict in params:
                     df_test = pd.DataFrame([coef])
                     df_test['epoch'] = epoch_number
                     df_test['data_number'] = i
-                    # if opt.print_images_with_uncertainty:
-                        # visuals = model.get_current_visuals()
-                        # image_paths_A, image_paths_B, image_paths_seg = model.get_image_paths()
-                        # visualizer.save_cycle_gan_images_to_dir_uncertainty(cycle_output_dir, visuals, img_path)
-                        # image_name = model.get_name()
-                        # image = model.get_image()
-                        # save_image_array(image, cycle_output_dir, image_name)
+
                     if not os.path.isfile(filename) or os.stat(filename).st_size == 0:
                         df_test.to_csv(filename, index=False)
                     else:
