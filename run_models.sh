@@ -8,7 +8,7 @@
 #SBATCH --output=%N-%j.out
 
 module load python/3.10 # Using Default Python version - Make sure to choose a version that suits your application
-source /home/rtm/projects/rrg-eugenium/rtm/domain_adaptation_CTscan/ENV_monai2/bin/activate
+source ./domain_adaptation_CTscan/ENV_monai2/bin/activate # path to python environment
 
 #sbatch --account=rrg-eugenium pytorch-ddp-test.sh
 
