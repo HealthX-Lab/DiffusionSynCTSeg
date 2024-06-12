@@ -99,7 +99,7 @@ class SBModel(BaseModel):
         parser.add_argument('--Generation_step_seg', type=bool, default=False,
                             help='write info in txt file ')
         parser.add_argument('--diff_uncertainty', type=bool, default=True,
-                            help='write info in txt file ')
+                            help='add uncertainty to the model ')
 
 
         # diffusion
@@ -116,19 +116,7 @@ class SBModel(BaseModel):
         opt.nce_idt = True
         opt.lambda_NCE=1.0
 
-        # Set default parameters for CUT and FastCUT
-        # if opt.mode.lower() == "sb":
-        #     opt.nce_idt=True
-        #     opt.lambda_NCE=1.0
-        # elif opt.mode.lower() == "fastcut":
-        #     opt.nce_idt=False
-        #     opt.lambda_NCE=10.0
-        #     opt.flip_equivariance=True
-        #     opt.n_epochs=150
-        #     opt.n_epochs_decay=50
-        # 
-        # else:
-        #     raise ValueError(opt.mode)
+
 
         return opt
 
@@ -138,7 +126,6 @@ class SBModel(BaseModel):
         size = opt.fineSize
         self.input_A = self.Tensor(opt.batchSize, opt.input_nc, opt.fineSize, opt.fineSize)
         self.input_B = self.Tensor(opt.batchSize, opt.input_nc, opt.fineSize, opt.fineSize)
-        # self.input_Seg = self.Tensor(nb, opt.output_nc_seg, size, size)
         self.input_Seg = torch.zeros(nb, opt.output_nc_seg, size, size)
 
         # self.image_array = np.zeros((25, 136, 156), dtype=np.float32)
@@ -416,16 +403,10 @@ class SBModel(BaseModel):
                     self.input_Seg_one[0, d%41, :, :] = seg_2D
                     self.real_B_3d[:, :, d%41, :, :] = self.real_B
 
-        #********
-
-        # input_B = input['B']
-        # self.input_B.resize_(input_B.size()).copy_(input_B)
-        # ********
             
             
 
     def forward(self):
-        # print('opt.nce_idt',self.opt.nce_idt)
 
         tau = self.opt.tau
         T = self.opt.num_timesteps
@@ -487,11 +468,7 @@ class SBModel(BaseModel):
                 self.real_A_noisy2 = Xt2.detach()
 
             z_in = torch.randn(size=[bs, 4 * self.opt.ngf]).to(self.real_A.device)
-            # if self.opt.nce_idt and self.opt.isTrain :
-            #     print('bssss',bs)
-                # z_in = torch.randn(size=[2 * bs, 4 * self.opt.ngf]).to(self.real_A.device)
-                # self.time_idx = (torch.randint(T, size=[1]).cuda() * torch.ones(size=[2*bs]).cuda()).long()#(t * torch.ones(size=[2*self.real_A.shape[0]]).to(self.real_A.device)).long()
-    
+
             z_in2 = torch.randn(size=[bs, 4 * self.opt.ngf]).to(self.real_A.device)
             """Run forward pass"""
             self.real = torch.cat((self.real_A, self.real_B),
@@ -505,11 +482,8 @@ class SBModel(BaseModel):
                 if self.flipped_for_equivariance:
                     self.real = torch.flip(self.real, [3])
                     self.realt = torch.flip(self.realt, [3])
-    
-            # print('real_t ', self.realt.shape, z_in.shape)
-            # print(self.realt.shape, self.time_idx.shape, z_in.shape)
+
             self.fake = self.netG(self.realt, self.time_idx, z_in)
-            # print('real_A_noisy_2 ',self.real_A_noisy2.shape,  z_in2.shape)
             self.fake_B2 = self.netG(self.real_A_noisy2, self.time_idx, z_in2)
             self.fake_B = self.fake[:self.real_A.size(0)]
             if self.opt.nce_idt:
@@ -525,10 +499,8 @@ class SBModel(BaseModel):
                     elif self.opt.mode_seg == '3d':
                         d = self.data_number
                         if d % 41 < self.opt.Depth:
-                            # print(' in setting 3d fake B')
                             self.fake_B_3d[:, :, d % 41, :, :] = fake
                         if self.data_number % 41 == 40 and self.data_number:
-                            # print(' in segmentaion 3d')
                             self.fake_seg = self.netSeg(self.fake_B_3d)
 
                 else:
@@ -541,17 +513,9 @@ class SBModel(BaseModel):
                     if self.opt.mode_seg == '3d':
                         d = self.data_number
                         if d % 41 < self.opt.Depth:
-                            # print(' in setting 3d fake B')
                             self.fake_B_3d[:, :, d % 41, :, :] = self.fake_B
                         if self.data_number % 41 == 40 and self.data_number:
-                            # print(' in segmentaion 3d')
                             self.fake_seg = self.netSeg(self.fake_B_3d)
-
-
-                # setattr(self, "seg_fake", self.seg_fake_B)
-
-
-                
 
         if self.opt.phase == 'test':
             tau = self.opt.tau
@@ -569,8 +533,6 @@ class SBModel(BaseModel):
             self.timestep = times[time_idx]
             visuals = []
             with torch.no_grad():
-                self.netG.eval()
-                # self.netSeg.eval()
                 for t in range(self.opt.num_timesteps):
 
                     if t > 0:
@@ -596,16 +558,16 @@ class SBModel(BaseModel):
                 if self.opt.mode_seg == '2d':
                     self.fake_seg = self.netSeg.forward(self.fake_B)
                     self.real_seg = self.netSeg.forward(self.real_B)
-                # elif self.opt.mode_seg == '3d':
-                #     d = self.data_number
-                #     if d % 41 < self.opt.Depth:
-                #         # print(' in setting 3d fake B')
-                #         self.fake_B_3d[:, :, d % 41, :, :] = self.fake_B
-                #
-                #     if self.data_number % 41 == 40 and self.data_number:
-                #         # print(' in segmentaion 3d')
-                #         self.fake_seg = self.netSeg.forward(self.fake_B_3d)
-                #         self.real_seg = self.netSeg.forward(self.real_B_3d)
+                elif self.opt.mode_seg == '3d':
+                    d = self.data_number
+                    if d % 41 < self.opt.Depth:
+                        # print(' in setting 3d fake B')
+                        self.fake_B_3d[:, :, d % 41, :, :] = self.fake_B
+
+                    if self.data_number % 41 == 40 and self.data_number:
+                        # print(' in segmentaion 3d')
+                        self.fake_seg = self.netSeg.forward(self.fake_B_3d)
+                        self.real_seg = self.netSeg.forward(self.real_B_3d)
 
 
     def compute_D_loss(self):
@@ -757,21 +719,7 @@ class SBModel(BaseModel):
 
 
 
-    # def get_current_visuals(self):
-    #     return_images = []
-    #     return_images += [('real_A', getattr(self,'visual_real_A'))]
-    #     if self.opt.segmentation and self.opt.phase == 'test':
-    #         return_images += [('seg_real', getattr(self, 'visual_seg_real'))]
-    #         for t in range(self.opt.num_timesteps):
-    #             return_images += [(f'seg_fake_{t}', getattr(self, 'visual_seg_fake_' + str(t + 1)))]
-    #             return_images += [(f'fake_B_{t}', getattr(self, 'visual_fake_' + str(t + 1)))]
-    #     elif self.opt.segmentation:
-    #         return_images += [(f'seg_fake', getattr(self, 'visual_seg_fake'))]
-    #         return_images += [(f'fake_B', getattr(self, 'visual_fake_B' ))]
-    #
-    #     # for t in range(self.opt.num_timesteps):
-    #
-    #     return OrderedDict(return_images)
+
 
 
     def get_current_visuals(self):
@@ -800,34 +748,20 @@ class SBModel(BaseModel):
         elif self.opt.phase == 'test':
             visuals = {}
 
-            real_A= util.tensor2im(self.real_A.data)
             visuals['fake_B'] = [util.tensor2im(self.fake_B.data)]
-
-            real_B = util.tensor2im(self.real_B.data)
-            input_seg = util.tensor2seg(self.input_Seg.data)
-
-            # print('fake ****')
             visuals['fake_seg'] = [util.tensor2seg(F.softmax(self.fake_seg.data, dim=1)[:, 1, :, :])]
-            # print('real ****')
-            visuals['seg_real'] = [util.tensor2seg(F.softmax(self.real_seg.data, dim=1)[:,1,:,:])]#>0.005
-            # print('fake ****')
+            visuals['seg_real'] = [util.tensor2seg(F.softmax(self.real_seg.data, dim=1)[:,1,:,:])]
 
-            # print('heatmap')
             heatmap = {key: util.tensor2seg(self.heatmap[key]) for key in self.heatmap.keys() if 'seg' in key}
-            # print('uncertainty_map')
             uncertainty_map = {key: util.tensor2map(self.uncertainty_map[key]) for key in self.uncertainty_map.keys()}
-            # print('confidence_map')
             confidence_map = {key: util.tensor2map(self.confidence_map[key]) for key in self.confidence_map.keys() if
                               'seg' in key}
-            # print('entropy_map')
             entropy_map = {key: util.tensor2map(self.entropy_map[key]) for key in self.entropy_map.keys() if
                            'seg' in key}
-            # print('var_map')
             var_map = {key: util.tensor2map(self.var[key]) for key in self.var.keys() if 'seg' not in key}
 
             real_A = util.tensor2im(self.real_A.data)
             real_B = util.tensor2im(self.real_B.data)
-            # print('seg**')
             input_Seg = util.tensor2realseg(self.input_Seg.data)
 
             return OrderedDict([
@@ -854,7 +788,6 @@ class SBModel(BaseModel):
         models = [self.netG, self.netSeg]
         for i in range(0,len(models)):
             for m in models[i].modules():
-                # print('*&*&*&', m.__class__.__name__)
                 if m.__class__.__name__.startswith('Dropout'):
                     # print('******', m.__class__.__name__)
                     m.train()
@@ -867,19 +800,9 @@ class SBModel(BaseModel):
         """
         # print('i am in test')
         if not self.opt.MC_uncertainty:
-            # self.enable_dropout()
             self.forward()
-            # self.fake_B = self.netG.forward(self.real_A)
-            # self.fake_seg = self.netSeg.forward(self.fake_B)
-            # self.real_seg = self.netSeg.forward(self.real_B)
 
-
-            # with torch.no_grad():
-            #     self.enable_dropout()
-            #     self.forward()
-            #     self.compute_visuals()
         elif self.opt.MC_uncertainty :
-            # print('number_of_images in model', self.number_of_images)
             if self.opt.mode_seg =='2d':
                 self.create_uncertainty()
             elif self.opt.mode_seg =='3d':
@@ -892,10 +815,6 @@ class SBModel(BaseModel):
 
                 if self.data_number % 41 == 40 and self.data_number:
                     self.compute_3D()
-
-
-
-
 
     def compute_3D(self):
 
@@ -913,11 +832,7 @@ class SBModel(BaseModel):
                 real_seg = self.real_seg[i, :, slice_number, :, :].unsqueeze(0)
                 fake_B = self.fake_B_3d[i, :, slice_number, :, :].unsqueeze(0)
                 self.MC_uncertainty_outputs['fake_seg'].append(fake_seg.detach().cpu())
-                # print("Length of MC_uncertainty_outputs['fake_seg']:", len(self.MC_uncertainty_outputs['fake_seg']))  # Add this line
-
                 self.MC_uncertainty_outputs['seg_real'].append(real_seg.detach().cpu())
-                # print("Length of MC_uncertainty_outputs['seg_real']:", len(self.MC_uncertainty_outputs['seg_real']))  # Add this line
-
                 self.MC_uncertainty_outputs['fake_B'].append(fake_B.detach().cpu())
 
             self.number_of_images = slice_number
@@ -942,7 +857,6 @@ class SBModel(BaseModel):
         # self.enable_dropout()
 
         if not self.opt.diff_uncertainty:
-            print('i am here')
             for i in range(0, self.opt.num_samples_uncertainty):
                 self.forward()
                 fake_seg = F.softmax(self.fake_seg.data, dim=1)
@@ -968,12 +882,10 @@ class SBModel(BaseModel):
             self.MC_uncertainty_outputs)
         self.input_Seg = self.input_Seg.detach().cpu()
         self.real_B = self.real_B.detach().cpu()
-        if self.number_of_images < 30:
-            # print('image number in set image', self.number_of_images)
-            self.set_image(self.number_of_images, self.crop_images(self.mean['seg_real']))
+
+        self.set_image(self.number_of_images, self.crop_images(self.mean['seg_real']))
         self.set_coef()
         if self.number_of_images % 41 == 40:
-            # print('image number in 3D image', self.number_of_images)
             self.set_3Dcoef()
 
 
@@ -994,18 +906,8 @@ class SBModel(BaseModel):
                 confidence_map[key] = mean[key].max(dim=1)[0]
                 entropy_map[key] = self.compute_entropy(mean[key])
                 if key =='seg_real' :
-
-                    if self.number_of_images < 35:
-                        self.cal_manual_dice(outputs[key])
-                        self.cal_manual_iou(outputs[key])
-                    else:
-                        self.tn1, self.fp1, self.fn1, self.tp1 = [65536, 0, 0, 0]
-                        self.tn2, self.fp2, self.fn2, self.tp2 = [65536, 0, 0, 0]
-                        self.mean_pure_dice = self.mean_dice_gamma_1 = self.mean_dice_gamma_2 = torch.tensor(1.0, dtype=torch.float32).item()
-                        self.one_pure_dice = self.one_dice_gamma_1 = self.one_dice_gamma_2 = torch.tensor(1.0, dtype=torch.float32).item()
-                        self.mean_pure_iou = self.mean_iou_gamma_1 = self.mean_iou_gamma_2 = torch.tensor(1.0, dtype=torch.float32)
-                        self.one_pure_iou = self.one_iou_gamma_1 = self.one_iou_gamma_2 = torch.tensor(1.0, dtype=torch.float32)
-
+                    self.cal_manual_dice(outputs[key])
+                    self.cal_manual_iou(outputs[key])
 
 
 
@@ -1018,9 +920,7 @@ class SBModel(BaseModel):
         return mean, var, heatmap, uncertainty_map, confidence_map, entropy_map
 
     def cal_manual_dice(self, segmentation):
-        # print('in cal manual dice ', np.shape(segmentation))
         mean_seg = torch.stack(segmentation).mean(dim=0)
-        # print('in cal manual dice after mean', np.shape(mean_seg))
 
         one_seg = segmentation[0]
         self.mean_pure_dice, self.mean_dice_gamma_1, self.mean_dice_gamma_2 = self.preprocessed_dice(mean_seg)
@@ -1063,14 +963,6 @@ class SBModel(BaseModel):
         self.tn2, self.fp2, self.fn2, self.tp2 = confusion_matrix(y_true, y_pred2, labels=[0, 1]).ravel()
 
 
-    # def preprocessed_gamma(self, seg):
-    #     pure_dice = self.dice_coef(seg, self.input_Seg, smooth=1)
-    #     seg_gamma_1 = self.apply_gamma(seg, 0.1)
-    #     dice_gamma_1 = self.dice_coef(seg_gamma_1, self.input_Seg, smooth=1)
-    #     seg_gamma_2 = self.apply_gamma(seg, 0.2)
-    #     dice_gamma_2 = self.dice_coef(seg_gamma_2, self.input_Seg, smooth=1)
-    #     return pure_dice, dice_gamma_1, dice_gamma_2
-
     def crop_images(self, seg):
         # print('****&*&*',np.shape(seg))
         height, width = seg.shape[2:]  # In case of color image, ignore the color channel
@@ -1079,7 +971,6 @@ class SBModel(BaseModel):
         top = 60
         bottom = height - 60
         cropped_image = seg[0, 1, top:bottom, left:right]
-        # print('****&&&@@@*&*',np.shape(cropped_image))
         return cropped_image
 
     def pad_image(self, seg, cropped_image):
@@ -1095,26 +986,21 @@ class SBModel(BaseModel):
         # Padded image (zero-filled)
         padded_image = torch.zeros_like(seg)
         padded_image[:, 1, top:bottom, left:right] = cropped_image
-        # print('Padded image shape:', padded_image.shape)
 
         return padded_image
 
     def apply_gamma(self, seg, gamma):
         from skimage.filters import threshold_otsu
         from skimage import exposure
-        # print('apply gamma ',np.shape(seg))
         cropped_image = self.crop_images(seg)
-        # print('apply gamma after crop ',np.shape(cropped_image))
 
         cropped_image = self.pad_image(seg, cropped_image)
-        # print('apply gamma after pad ',np.shape(cropped_image))
 
         if isinstance(cropped_image, torch.Tensor):
             cropped_image = cropped_image.detach().cpu().numpy()  # Convert to numpy
             cropped_image = cropped_image.astype(np.float32)
 
         cropped_image = exposure.adjust_gamma(cropped_image, gamma)
-        # print('apply gamma after gamma ',np.shape(cropped_image))
 
         non_zero_cropped_image = cropped_image[cropped_image > 0]
         threshold_value = 0
@@ -1122,252 +1008,19 @@ class SBModel(BaseModel):
             threshold_value = threshold_otsu(non_zero_cropped_image)
         threshold_value = threshold_value - 0.15
         binary_image = cropped_image > threshold_value
-        # print('apply gamma after thresh ',np.shape(binary_image))
 
         binary_image = torch.from_numpy(binary_image)
         binary_image = binary_image.int()
-        # print('apply gamma after apply gamma ',np.shape(binary_image))
 
         return binary_image
 
-    # def compute_output(self, outputs):
-    #     mean = {key: [] for key in outputs.keys()}
-    #     var = {key: [] for key in outputs.keys()}
-    #     heatmap = {key: [] for key in outputs.keys()}
-    #     uncertainty_map = {key: [] for key in outputs.keys()}
-    #     confidence_map = {key: [] for key in outputs.keys()}
-    #     entropy_map = {key: [] for key in outputs.keys()}
-    #     time = self.opt.num_timesteps - 1
-    #     # mean['seg_real'], var['seg_real'] = self.probability(outputs['seg_real'])
-    #     mean_real_seg, var_real_seg = self.probability(outputs['seg_real'])
-    #
-    #     heatmap['seg_real'].append({'t': time, 'value': torch.argmax(mean_real_seg, dim=1)})
-    #     uncertainty_map['seg_real'].append({'t': time, 'value': var_real_seg.max(dim=1)[0].sqrt()})
-    #     confidence_map['seg_real'].append({'t': time, 'value': mean_real_seg.max(dim=1)[0]})
-    #     entropy_map['seg_real'].append({'t': time, 'value': self.compute_entropy(mean_real_seg)})
-    #     mean['seg_real'].append({'t': time, 'value': mean_real_seg})
-    #     var['seg_real'].append({'t': time, 'value': var_real_seg})
-    #
-    #     for t in range(self.opt.num_timesteps):
-    #
-    #         fake_B = [sample[t] for sample in outputs['fake_B']]
-    #         mean_fake_B, var_fake_B = self.probability(fake_B)
-    #         fake_seg = [sample[t] for sample in outputs['fake_seg']]
-    #         mean_fake_seg, var_fake_seg = self.probability(fake_seg)
-    #
-    #         time = t
-    #         uncertainty_map['fake_B'].append({'t': time, 'value': var_fake_B.sqrt()[0]})
-    #         heatmap['fake_seg'].append({'t': time, 'value': torch.argmax(mean_fake_seg, dim=1)})
-    #         uncertainty_map['fake_seg'].append({'t': time, 'value': var_fake_seg.max(dim=1)[0].sqrt()})
-    #         confidence_map['fake_seg'].append({'t': time, 'value': mean_fake_seg.max(dim=1)[0]})
-    #         entropy_map['fake_seg'].append({'t': time, 'value': self.compute_entropy(mean_fake_seg)})
-    #
-    #         mean['fake_seg'].append({'t': time, 'value': mean_fake_seg})
-    #         var['fake_seg'].append({'t': time, 'value': var_fake_seg})
-    #         mean['fake_B'].append({'t': time, 'value': mean_fake_B})
-    #         var['fake_B'].append({'t': time, 'value': var_fake_B})
-    #     return mean, var, heatmap, uncertainty_map, confidence_map, entropy
+
 
     def probability(self,img):
         stacked_output = torch.stack(img)
         mean = stacked_output.mean(dim=0)
         var = stacked_output.var(dim=0)
-        # for i, item in enumerate(img):
-        # print(f"Shape of item : {np.shape(img)}")
         return mean, var
-    # def set_coef(self):
-    #     self.var_fake_B_2D = self.avg_uncertainty(self.uncertainty_map['fake_B'])
-    #     self.var_seg_real_2D = self.avg_uncertainty(self.uncertainty_map['seg_real'])
-    #     self.var_seg_fake_2D = self.avg_uncertainty(self.uncertainty_map['fake_seg'])
-    #     self.ssim_value_B_2D = ssim(self.mean['fake_B'].cuda(), self.real_B, data_range=1.0,
-    #                                 size_average=True).item()
-    #     self.mse_fake_B_2D = self.cal_mse(self.mean['fake_B'], self.real_B)
-    #     self.seg_real_IOU_2D = self.get_IOU(self.heatmap['seg_real'], self.input_Seg)
-    #     self.seg_fake_2D = self.dice_coef(self.heatmap['fake_seg'], self.input_Seg, smooth=1)
-    #     self.seg_real_2D = self.dice_coef(self.heatmap['seg_real'], self.input_Seg, smooth=1)
-    #     self.get_confusion_matrix(self.heatmap['seg_real'], self.input_Seg, 'real')
-    #     self.recal_2D = self.cal_recal()
-    #     self.specificity_2D = self.cal_specificity()
-    #     self.percision_2D = self.cal_percision()
-    #
-    #     self.var_fake_B += self.var_fake_B_2D
-    #
-    #     self.var_seg_real += self.var_seg_real_2D
-    #     self.var_seg_fake += self.var_seg_fake_2D
-    #
-    #     self.ssim_value_B += self.ssim_value_B_2D
-    #     self.mse_fake_B += self.mse_fake_B_2D
-    #
-    #     self.seg_real_IOU += self.seg_real_IOU_2D
-    #
-    #     self.seg_fake.append(self.seg_fake_2D)
-    #     self.dice_seg_real.append(self.seg_real_2D)
-    #
-    # #
-    # def get_coef(self):
-    #     # dice_seg_fake = np.mean(self.seg_fake)
-    #     # std_dice_seg_fake = np.std(self.seg_fake)
-    #     #
-    #     # # print('self.seg_real',self.seg_real)
-    #     # dice_seg_real = np.mean(self.dice_seg_real)
-    #     # std_dice_seg_real = np.std(self.dice_seg_real)
-    #
-    #     results = \
-    #         {
-    #             'mean_pure_iou':self.mean_pure_iou,
-    #             'mean_iou_gamma_1':self.mean_iou_gamma_1,
-    #             'mean_iou_gamma_2':self.mean_iou_gamma_2,
-    #             'one_pure_iou':self.one_pure_iou,
-    #             'one_iou_gamma_1': self.one_iou_gamma_1,
-    #             'one_iou_gamma_2': self.one_iou_gamma_2,
-    #
-    #             'mean_pure_dice': self.mean_pure_dice,
-    #             'mean_dice_gamma_1':self.mean_dice_gamma_1,
-    #             'mean_dice_gamma_2':self.mean_dice_gamma_2,
-    #             'one_pure_dice':self.one_pure_dice,
-    #             'one_dice_gamma_1':self.one_dice_gamma_1,
-    #             'one_dice_gamma_2':self.one_dice_gamma_2,
-    #
-    #
-    #             # 'mse_fake_B': self.mse_fake_B,
-    #             'mse_fake_B_2D': self.mse_fake_B_2D,
-    #             # 'seg_real_IOU_H': self.seg_real_IOU,
-    #             'seg_real_IOU_2D_H': self.seg_real_IOU_2D,
-    #             'dice_seg_fake_2D_H': self.seg_fake_2D,
-    #             'dice_seg_real_2D_H': self.seg_real_2D,
-    #             # 'mean_dice_seg_fake': dice_seg_fake,
-    #             # 'mean_dice_seg_real': dice_seg_real,
-    #             # 'std_dice_seg_fake': std_dice_seg_fake,
-    #             # 'std_dice_seg_real': std_dice_seg_real,
-    #             # 'ssim_value_B': self.ssim_value_B,
-    #             'ssim_value_B_2D': self.ssim_value_B_2D,
-    #
-    #             # 'var_seg_fake': self.var_seg_fake,
-    #             'avg_var_seg_fake_2D': self.var_seg_fake_2D,
-    #
-    #             # 'var_seg_real': self.var_seg_real,
-    #             'avg_var_seg_real_2D': self.var_seg_real_2D,
-    #
-    #             # 'var_fake_B': self.var_fake_B,
-    #             'avg_var_fake_B_2D': self.var_fake_B_2D,
-    #
-    #             'percision_2D': self.percision_2D,
-    #             'specificity_2D': self.specificity_2D,
-    #             'recal_2D': self.recal_2D,
-    #             # 'tp': self.tp,
-    #             # 'tn': self.tn,
-    #             # 'fp': self.fp,
-    #             # 'fn': self.fn,
-    #             'dice': self.dice,
-    #             'iou': self.iou,
-    #             'recall': self.recal,
-    #             'specificity': self.specificity,
-    #             'percision': self.percision,
-    #             'CT_name': self.image_paths_B[0].split('/')[-1],
-    #             'mri_name': self.image_paths_A[0].split('/')[-1],
-    #             'Seg': self.image_paths_seg[0].split('/')[-1],
-    #         }
-    #     return results
-
-
-    # def set_coef(self):
-    #
-    #     self.var_seg_real_2D = self.avg_uncertainty(self.uncertainty_map['seg_real'][0]['value'])
-    #     self.seg_real_IOU_2D = self.get_IOU(self.heatmap['seg_real'][0]['value'], self.input_Seg)
-    #     self.seg_real_2D = self.dice_coef(self.heatmap['seg_real'][0]['value'], self.input_Seg, smooth=1)
-    #     self.get_confusion_matrix(self.heatmap['seg_real'][0]['value'], self.input_Seg, 'real')
-    #     self.recal_2D = self.cal_recal()
-    #     self.specificity_2D = self.cal_specificity()
-    #     self.percision_2D = self.cal_percision()
-    #     self.var_seg_real += self.var_seg_real_2D
-    #     self.seg_real_IOU += self.seg_real_IOU_2D
-    #     self.dice_seg_real.append(self.seg_real_2D)
-    #
-    #     self.results['seg_real_IOU']= self.seg_real_IOU.item()
-    #     self.results['seg_real_IOU_2D']= self.seg_real_IOU_2D.item()
-    #     self.results['dice_seg_real_2D']= self.seg_real_2D
-    #     self.results['var_seg_real'] = self.var_seg_real
-    #     self.results['var_seg_real_2D'] = self.var_seg_real_2D
-    #
-    #     self.results['percision_2D'] = self.percision_2D
-    #     self.results['specificity_2D'] = self.specificity_2D
-    #     self.results['recal_2D'] = self.recal_2D
-    #
-    #     self.results['tp'] = self.tp
-    #     self.results['tn'] = self.tn
-    #     self.results['fp'] = self.fp
-    #     self.results['fn'] = self.fn
-    #
-    #     self.results['dice'] = self.dice
-    #     self.results['iou'] = self.iou
-    #     self.results['recall'] = self.recal
-    #     self.results['specificity'] = self.specificity
-    #     self.results['percision'] = self.percision
-    #
-    #
-    #     self.var_fake_B = {t: 0 for t in range(self.opt.num_timesteps)}
-    #     self.var_seg_fake = {t: 0 for t in range(self.opt.num_timesteps)}
-    #     self.ssim_value_B = {t: 0 for t in range(self.opt.num_timesteps)}
-    #     self.mse_B = {t: 0 for t in range(self.opt.num_timesteps)}
-    #     self.mse_fake_B = {t: 0 for t in range(self.opt.num_timesteps)}
-    #     self.seg_fake = {t: [] for t in range(self.opt.num_timesteps)}
-    #
-    #     for t in range(self.opt.num_timesteps):
-    #
-    #         self.var_fake_B_2D = self.avg_uncertainty(self.uncertainty_map['fake_B'][t]['value'])
-    #         self.ssim_value_B_2D = ssim(self.mean['fake_B'][t]['value'].cuda(), self.real_B, data_range=1.0, size_average=True).item()
-    #         self.mse_fake_B_2D = self.cal_mse(self.mean['fake_B'][t]['value'], self.real_B)
-    #
-    #         self.var_seg_fake_2D = self.avg_uncertainty(self.uncertainty_map['fake_seg'][t]['value'])
-    #         self.seg_fake_2D = self.dice_coef(self.heatmap['fake_seg'][t]['value'], self.input_Seg, smooth=1)
-    #
-    #
-    #         self.var_fake_B[t] += self.var_fake_B_2D
-    #         self.ssim_value_B[t] += self.ssim_value_B_2D
-    #         self.mse_fake_B[t] += self.mse_fake_B_2D
-    #
-    #         self.seg_fake[t].append(self.seg_fake_2D)
-    #         self.var_seg_fake[t] += self.var_seg_fake_2D
-    #
-    #         self.results[f'mse_fake_B_{t}'] =  self.mse_fake_B[t]
-    #         self.results[f'mse_fake_B_2D_{t}'] = self.mse_fake_B_2D
-    #         self.results[f'dice_seg_fake_2D_{t}'] = self.seg_fake_2D
-    #         self.results[f'ssim_value_B_{t}'] = self.ssim_value_B[t]
-    #         self.results[f'ssim_value_B_2D_{t}'] = self.ssim_value_B_2D
-    #
-    #         self.results[f'var_seg_fake_{t}'] = self.var_seg_fake[t]
-    #         self.results[f'var_seg_fake_2D_{t}'] =  self.var_seg_fake_2D
-    #         self.results[f'var_fake_B_{t}'] =  self.var_fake_B[t]
-    #         self.results[f'var_fake_B_2D_{t}'] = self.var_fake_B_2D
-    #
-    #
-    #
-    #
-    #
-    #
-    # def get_coef(self):
-    #
-    #
-    #     for t in range(self.opt.num_timesteps):
-    #         dice_seg_fake = np.mean(self.seg_fake[t])
-    #         std_dice_seg_fake = np.std(self.seg_fake[t])
-    #         self.results[f'mean_dice_seg_fake_{t}'] = dice_seg_fake
-    #         self.results[f'std_dice_seg_fake_{t}'] = std_dice_seg_fake
-    #
-    #
-    #     dice_seg_real = np.mean(self.dice_seg_real)
-    #     std_dice_seg_real = np.std(self.dice_seg_real)
-    #     self.results['mean_dice_seg_real'] = dice_seg_real
-    #     self.results['std_dice_seg_real'] = std_dice_seg_real
-    #
-    #
-    #
-    #
-    #     self.results['CT_name'] = self.image_paths_B[0].split('/')[-1]
-    #     self.results['mri_name'] =  self.image_paths_A[0].split('/')[-1]
-    #     self.results['Seg'] = self.image_paths_seg[0].split('/')[-1]
-    #
-    #     return self.results
 
     def calculate_ssim(self,image1, image2):
         import torch
@@ -1493,21 +1146,17 @@ class SBModel(BaseModel):
     def dice_coef(self, predicted, ground_truth, smooth=1.0):
         ground_truth = ground_truth[:, 1, :, :]
         ground_truth = ground_truth.detach().cpu()
-        # print(' in dice coef', np.shape(ground_truth), np.shape(predicted))
         intersection = torch.sum(predicted * ground_truth)
         dice = (2.0 * intersection + smooth) / (torch.sum(predicted) + torch.sum(ground_truth) + smooth)
-        # print('dice ',dice)
         return dice.item()
 
     def get_IOU(self, predicted, ground_truth):
         ground_truth = ground_truth[:, 1, :, :]
         ground_truth = ground_truth.detach().cpu()
-        # print(' in IOU', np.shape(ground_truth), np.shape(predicted))
 
         intersection = torch.sum(predicted * ground_truth)
         union = (predicted.bool() | ground_truth.bool()).float().sum((1, 2))
         iou = (intersection + 1e-6) / (union + 1e-6)
-        # print('iou ', iou, intersection, union)
         return iou.mean()
 
     def cal_mse(self, input, target):
@@ -1517,11 +1166,11 @@ class SBModel(BaseModel):
 
     def get_confusion_matrix(self, y_pred, y_true, key):
         y_true = y_true[:, 1, :, :].detach().cpu().numpy()
-        img1 = y_true  # .detach().cpu().numpy()
+        img1 = y_true
 
         img1 = img1.flatten()
 
-        y_true = img1  # y_true.view(-1)#.detach().cpu().numpy()
+        y_true = img1
         y_pred = y_pred.view(-1).detach().cpu().numpy()
         self.tn, self.fp, self.fn, self.tp = self.confusion_matrix(y_true, y_pred, labels=[0, 1]).ravel()
 
