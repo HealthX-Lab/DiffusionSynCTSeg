@@ -37,10 +37,8 @@ def weighted_dice_loss(probs1, probs2, weights=[0.2,0.8]):
     probs1, probs2 are torch variables of size BatchxnclassesxHxW representing probabilities for each class
     weights is a tensor representing the weight for each class
     """
-    # print('min and mx *** ',probs2.min(),probs2.max())
     threshold = 0
     probs2 = torch.where(probs2 > threshold, torch.tensor(1.0).cuda(), torch.tensor(-1.0).cuda())
-    # print('min and mx +++ ', probs2.min(),probs2.max())
 
     weights = torch.from_numpy(np.array(weights)).cuda().float()
     # Ensure that the input tensors have the same size
@@ -76,8 +74,6 @@ def weighted_dice_loss(probs1, probs2, weights=[0.2,0.8]):
     # Exclude the Dice coefficient for the background class
     dice_eso = dice[0:]
 
-
-
     # Calculate the Dice loss by taking the negative of the average of the Dice coefficients for the foreground classes
     dice_total = 1 -  torch.sum(dice_eso) / dice_eso.size(0)  # divide by number of classes (batch_sz)
 
@@ -91,7 +87,6 @@ def CrossEntropyLoss2d(inputs, targets, weight=None, size_average=True):
     return lossval
 
 def CrossEntropy2d(input, target, weight=None, size_average=True):
-    # print('** in cross entropy',input.shape,target.shape)
     # input:(n, c, h, w) target:(n, h, w)
     n, c, h, w = input.size()
 
@@ -100,13 +95,9 @@ def CrossEntropy2d(input, target, weight=None, size_average=True):
 
     target_mask = target >= 0
     target = target[target_mask]
-    # loss = F.nll_loss(F.log_softmax(input), target, weight=weight, size_average=False)
     loss = F.cross_entropy(input, target, weight=weight, size_average=False)
-    # loss = F.cross_entropy(input, target, weight=weight)
-    # print('target_mask.sum().data[0]',target_mask.sum().item())
     if size_average:
         loss /= target_mask.sum().item()
-        # print('size of cross entropy',loss, target_mask.sum().item())
 
     return loss
 #
@@ -206,10 +197,7 @@ class CycleSEGModel(BaseModel):
                                             opt.which_model_netD,
                                             opt.n_layers_D, opt.norm, use_sigmoid, self.gpu_ids)
 
-        print('ressss',not self.isTrain , opt.continue_train)
         if not self.isTrain or opt.continue_train:
-            print('helloooooo')
-
             which_epoch = opt.which_epoch
             self.load_network(self.netG_A, 'G_A', which_epoch)
             self.load_network(self.netG_B, 'G_B', which_epoch)
@@ -219,8 +207,6 @@ class CycleSEGModel(BaseModel):
                 self.load_network(self.netG_seg, 'Seg_A', which_epoch)
 
 
-
-                    # just_train_seg = True
         if opt.just_segmentation:
             for param in self.netG_A.parameters():
                 param.requires_grad = False
@@ -283,9 +269,6 @@ class CycleSEGModel(BaseModel):
                 self.optimizer_seg = torch.optim.Adam(self.netG_seg.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
 
 
-
-
-
             if self.opt.segmentation_discriminator:
                 self.netD_seg = networks.define_D(opt.input_nc, opt.ndf,
                                   opt.which_model_netD,
@@ -338,11 +321,8 @@ class CycleSEGModel(BaseModel):
         self.dist_map_label = input['dist_map']
 
         if self.opt.mode =='2d':
-            # print('input_Seg', input_Seg.shape, '*****')
-
             self.input_Seg.resize_(input_Seg.size()).copy_(input_Seg)
             self.image_paths = input['A_paths' if AtoB else 'B_paths']
-            # print(self.image_paths)
             if (self.opt.seg_norm == 'CrossEntropy' or self.opt.seg_norm =='CombinationLoss') :
                 input_Seg_one = input['Seg_one']
                 self.input_Seg_one.resize_(input_Seg_one.size()).copy_(input_Seg_one)
@@ -352,7 +332,6 @@ class CycleSEGModel(BaseModel):
             seg_2D = input['Seg_one']
 
             if d%41 < self.opt.Depth:
-                # print('in setting 3D seg in input ', d%41)
                 self.input_Seg_one[:, :, d%41, :, :] = seg_2D
                 # self.real_B_3d[:, :, d%41, :, :] = input_B
 
@@ -364,7 +343,6 @@ class CycleSEGModel(BaseModel):
         self.real_Seg = Variable(self.input_Seg)
         if (self.opt.seg_norm == 'CrossEntropy' or self.opt.seg_norm =='CombinationLoss') :
             self.real_Seg_one = Variable(self.input_Seg_one.long())
-            # print('self.real_Seg_one',self.real_Seg_one.shape, '***&*')
 
 
     # get image paths
@@ -387,7 +365,6 @@ class CycleSEGModel(BaseModel):
             gradient_p = networks.cal_gradient_penalty(
                 netD, real, fake, real.device
             )[0]
-            # print('***&*&',gradient_p)
             loss_D += gradient_p
 
         loss_D.backward()
@@ -395,12 +372,10 @@ class CycleSEGModel(BaseModel):
 
     def backward_D_A(self):
         fake_B = self.fake_B_pool.query(self.fake_B)
-        # fake_B = self.fake_B
         self.loss_D_A = self.backward_D_basic(self.netD_A, self.real_B, fake_B) * self.opt.lambda_D
 
     def backward_D_B(self):
         fake_A = self.fake_A_pool.query(self.fake_A)
-        # fake_A = self.fake_A
         self.loss_D_B = self.backward_D_basic(self.netD_B, self.real_A, fake_A) * self.opt.lambda_D
 
     def backward_G(self,data_number=0,epoch=0):
@@ -548,11 +523,6 @@ class CycleSEGModel(BaseModel):
 
 
         self.loss_G.backward()
-
-
-
-
-
 
     def optimize_parameters(self,data_number,epoch=0):
         if not self.opt.enable_early_stopping:

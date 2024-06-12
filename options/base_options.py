@@ -50,7 +50,9 @@ class BaseOptions():
         self.parser.add_argument('--dataset_mode', type=str, default='yh_seg',
                                  help='chooses how datasets are loadfed. [unaligned | aligned | single | yh | yh_seg| yh_test_seg | yh_seg]')
         self.parser.add_argument('--model', type=str, default='cycle_seg',
-                                 help='chooses which model to use. sb (for UNSB) | cut (for CUT model) |  cycle_seg (for cyclegan with segmentaiton) | TestGANModel | cycle_gan | test  | test_seg  | mri_seg | mri_test | finetune')
+                                 help='chooses which model to use. sb (for UNSB) | cut (for CUT model) |  cycle_seg (for cyclegan with segmentaiton) | test (CycleGAN test)  | TestGANModel | cycle_gan')
+        self.parser.add_argument('--yh_run_model', type=str, default='Train',
+                                 help='chooses which Test, Train,  TestSeg')
         self.parser.add_argument('--identity', type=float, default=0.5,
                                  help='use identity mapping. Setting identity other than 1 has an effect of scaling the weight of the identity mapping loss. For example, if the weight of the identity loss should be 10 times smaller than the weight of the reconstruction loss, please set optidentity = 0.1')
         self.parser.add_argument('--lambda_D', type=float, default=1.0, help='weight for discriminator loss')
@@ -124,8 +126,7 @@ class BaseOptions():
         self.parser.add_argument('--min_max_normalize', type=lambda x: bool(strtobool(x)), default='False',
                                  help='adding CT min max normalization ')
 
-        self.parser.add_argument('--yh_run_model', type=str, default='Train',
-                                 help='chooses which Test, Train,  TestSeg')
+
         self.parser.add_argument('--seg_norm', type=str, default='CrossEntropy',
                                  help='DiceNorm or CrossEntropy or CombinationLoss')
         self.parser.add_argument('--eval_step', type=bool, default=True, help='adding evaluation step')

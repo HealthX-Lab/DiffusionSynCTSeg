@@ -1025,40 +1025,40 @@ class CycleGANModel(BaseModel):
 
     def check_eraly_stopping(self,name,model,loss,delta,epoch):
         print('in check early stopping ', name)
-        # if self.best_metric[name] - loss >=  delta:
-        #     self.best_metric[name] = loss
-        #     self.epochs_since_improvement[name] = 0
-        #     # Save the best model
-        #     self.save_individual_model(name,f'best_{name}')
-        # else:
-        #     print('I am in plus for ', name)
-        #     self.epochs_since_improvement[name] += 1
-        #
-        # patience = 0
-        # if 'D' in name:
-        #     if self.epochs_since_improvement[name] >= self.opt.patience_D and epoch<60:
-        #         self.opt.patience_D = self.opt.patience_D + 5
-        #
-        #     patience = self.opt.patience_D
-        # elif 'G_':
-        #     if self.epochs_since_improvement[name] >= self.opt.patience_G and epoch<60:
-        #         self.opt.patience_G = self.opt.patience_G + 5
-        #
-        #     patience = self.opt.patience_G
-        # elif 'seg':
-        #     if self.epochs_since_improvement[name] >= self.opt.patience_seg and epoch<60:
-        #         self.opt.patience_seg = self.opt.patience_seg + 5
-        #
-        #     patience = self.opt.patience_seg
+        if self.best_metric[name] - loss >=  delta:
+            self.best_metric[name] = loss
+            self.epochs_since_improvement[name] = 0
+            # Save the best model
+            self.save_individual_model(name,f'best_{name}')
+        else:
+            print('I am in plus for ', name)
+            self.epochs_since_improvement[name] += 1
+
+        patience = 0
+        if 'D' in name:
+            if self.epochs_since_improvement[name] >= self.opt.patience_D and epoch<60:
+                self.opt.patience_D = self.opt.patience_D + 5
+
+            patience = self.opt.patience_D
+        elif 'G_':
+            if self.epochs_since_improvement[name] >= self.opt.patience_G and epoch<60:
+                self.opt.patience_G = self.opt.patience_G + 5
+
+            patience = self.opt.patience_G
+        elif 'seg':
+            if self.epochs_since_improvement[name] >= self.opt.patience_seg and epoch<60:
+                self.opt.patience_seg = self.opt.patience_seg + 5
+
+            patience = self.opt.patience_seg
 
 
 
-        # if self.epochs_since_improvement[name] >= patience:
-        #     print(f"Early stopping for {name}in epoch {epoch} patience {patience}!")
-        #     self.save_individual_model(name, f'best_{name}')
-        #     for param in model.parameters():
-        #         param.requires_grad = False
-        #     self.disable_training[name] = 1
+        if self.epochs_since_improvement[name] >= patience:
+            print(f"Early stopping for {name}in epoch {epoch} patience {patience}!")
+            self.save_individual_model(name, f'best_{name}')
+            for param in model.parameters():
+                param.requires_grad = False
+            self.disable_training[name] = 1
 
     def update_learning_rate(self):
         lrd = self.opt.lr / self.opt.niter_decay

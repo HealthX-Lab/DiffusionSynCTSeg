@@ -14,29 +14,18 @@ def create_model(opt):
         assert(opt.dataset_mode == 'yh_seg' or opt.dataset_mode == 'yh_seg_spleen')
         from .cycle_seg_model import CycleSEGModel
         model = CycleSEGModel()
-    elif opt.model == 'test':
+    elif opt.model == 'test' and opt.yh_run_model =='Test':
         assert(opt.dataset_mode == 'yh_seg')
         from .test_model import TestModel
         model = TestModel()
-    elif opt.model == 'test_seg':
-        assert(opt.dataset_mode == 'yh_seg')
-        from .test_seg_model import TestSegModel
-        model = TestSegModel()
-    elif opt.model == 'mri_seg':
-        assert(opt.dataset_mode == 'yh_seg')
-        from .mri_segmentation import MRISEGModel
-        model = MRISEGModel()
-    elif opt.model == 'mri_test':
-        assert(opt.dataset_mode == 'yh_seg')
-        from .test_mri_model import MRITestModel
-        model = MRITestModel()
-    elif opt.model == 'finetune':
-        assert(opt.dataset_mode == 'yh_seg')
-
-    elif opt.model == 'TestGANModel':
+    elif opt.model == 'sb':
         assert (opt.dataset_mode == 'yh_seg')
-        from .test_cycle_gan import TestGANModel
-        model = TestGANModel()
+        from .sb_model import SBModel
+        model = SBModel()
+    elif opt.model == 'cut':
+        assert (opt.dataset_mode == 'yh_seg')
+        from .cut_model import CUTModel
+        model = CUTModel()
 
 
     else:

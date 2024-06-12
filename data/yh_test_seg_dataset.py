@@ -67,34 +67,7 @@ class yhTestSegDataset(BaseDataset):
 
         A_img = self.transforms_normalize(A_img)
 
-        #strategy 1
-        # Seg_img[Seg_img == 6] = 4
-        # Seg_img[Seg_img == 7] = 5
-        # Seg_img[Seg_img == 14] = 6
-        #
-        # Seg_imgs = torch.Tensor(self.opt.output_nc_seg, self.opt.fineSize, self.opt.fineSize)
-        # Seg_imgs[0, :, :] = Seg_img == 0
-        # Seg_imgs[1, :, :] = Seg_img == 1
-        # Seg_imgs[2, :, :] = Seg_img == 2
-        # Seg_imgs[3, :, :] = Seg_img == 3
-        # Seg_imgs[4, :, :] = Seg_img == 4
-        # Seg_imgs[5, :, :] = Seg_img == 5
-        # Seg_imgs[6, :, :] = Seg_img == 6
 
-        #strategy 2
-        # Seg_img[Seg_img == 2] = 3
-        # Seg_img[Seg_img == 14] = 3
-        # Seg_img[Seg_img == 3] = 3
-        # Seg_img[Seg_img == 4] = 3
-        # Seg_img[Seg_img == 5] = 3
-        # Seg_img[Seg_img == 7] = 3
-        # Seg_img[Seg_img == 6] = 2
-        #
-        # Seg_imgs = torch.Tensor(self.opt.output_nc_seg, self.opt.fineSize, self.opt.fineSize)
-        # Seg_imgs[0, :, :] = Seg_img == 0
-        # Seg_imgs[1, :, :] = Seg_img == 1
-        # Seg_imgs[2, :, :] = Seg_img == 2
-        # Seg_imgs[3, :, :] = Seg_img == 3
         Seg_imgs = 0
         Seg_path = ''
 
