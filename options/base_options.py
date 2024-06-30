@@ -108,12 +108,12 @@ class BaseOptions():
                                  help='add quantum noise to fake ct images before segmentaiton')
 
         self.parser.add_argument('--GaussianBlur', type=lambda x: bool(strtobool(x)), default='False',
-                                 help='GaussianBlur')
+                                 help='adding GaussianBlur in mri and ct in input images')
         self.parser.add_argument('--gaussian_sigma', type=float, default=1, help='gaussian_sigma')
         self.parser.add_argument('--gaussian_kernel_size', type=int, default=3, help='gaussian_kernel_size')
 
         self.parser.add_argument('--Local_Histogram_Equalization', type=lambda x: bool(strtobool(x)), default='False',
-                                 help='Local_Histogram_Equalization')
+                                 help='Local_Histogram_Equalization in input images')
         self.parser.add_argument('--clip_limit', type=float, default=0.07, help='0.07')
         self.parser.add_argument('--LHE_kernel_size_x', type=int, default=50, help='LHE_kernel_size_x')
         self.parser.add_argument('--LHE_kernel_size_y', type=int, default=25, help='LHE_kernel_size_y')
@@ -133,46 +133,40 @@ class BaseOptions():
         self.parser.add_argument('--eval_batch', type=int, default=42, help='adding evaluation step')
 
         self.parser.add_argument('--MC_uncertainty', type=lambda x: bool(strtobool(x)), default='True',
-                                 help='monte carlo dropout uncertainty')
+                                 help='adding monte carlo dropout uncertainty')
         self.parser.add_argument('--num_samples_uncertainty', type=int, default=10,
-                                 help='nmber of images during test for calculating uncertainty')
+                                 help='number of images during test for calculating uncertainty')
         self.parser.add_argument('--weight_decay', type=float, default=0, help='l2 regularization 0 or 1e-5')
         self.parser.add_argument('--weight_segmentation_in_GAN', type=float, default=1,
                                  help='weight of segmentation loss ')
 
         self.parser.add_argument('--segmentation_discriminator', type=bool, default=False,
-                                 help='adding loss segmentation discriminator')
-        self.parser.add_argument('--just_segmentation', type=bool, default=False, help='just train segmentor')
+                                 help='adding discriminator loss in segmentation')
+        self.parser.add_argument('--just_segmentation', type=bool, default=False, help='just train segmentor in cyclegan')
         self.parser.add_argument('--separate_segmentation', type=bool, default=False,
-                                 help='train translation and segmentation separately')
+                                 help='train translation and segmentation separately in cyclegan')
         self.parser.add_argument('--MRI_CT_segmentation', type=bool, default=False,
-                                 help='train segmentaiton with mri and ct')
+                                 help='train segmentaiton with mri and ct in cyclegan')
 
         self.parser.add_argument('--boundry_loss', type=bool, default=False,
                                  help='add boundry loss to the segmentation')
         self.parser.add_argument('--boundry_loss_weight', type=int, default=0.5,
                                  help='weight for binary loss segmentation ')
         self.parser.add_argument('--seg_rec_loss', type=bool, default=False,
-                                 help='comparing segmentation loss of rec ct and real ct')
+                                 help='comparing segmentation loss of rec ct and real ct in cyclegan')
         self.parser.add_argument('--seg_fakeMRI_realCT_loss', type=bool, default=False,
-                                 help='comparing segmentation loss of rec ct and real ct')
+                                 help='comparing segmentation loss of rec ct and real ct in cyclegan')
         self.parser.add_argument('--segmentation_linear_increase', type=bool, default=False,
-                                 help='Increase linearly such that by epoch 25, your weight reaches 0.00001')
+                                 help='Increase linearly such that by epoch 25, your weight reaches 0.00001 in cyclegan')
         self.parser.add_argument('--segmentation_threshold_increase', type=bool, default=False,
-                                 help='We keep the weight at 0 for the first 5 epochs and then increase it linearly to 0.00001 by epoch 25')
+                                 help='We keep the weight at 0 for the first 5 epochs and then increase it linearly to 0.00001 by epoch 25 in cyclegan')
         self.parser.add_argument('--perceptual_loss', type=bool, default=False, help=' adding perceptual loss in D_A')
-        self.parser.add_argument('--direct_loss', type=bool, default=False, help=' adding direct loss in G_A and G_B')
+        self.parser.add_argument('--direct_loss', type=bool, default=False, help=' adding direct loss in G_A and G_B i cyclegan')
 
         # self.parser.add_argument('--soft_real_fake', type=bool, default=False, help='')
         self.parser.add_argument('--Wasserstein_Lossy', type=bool, default=False, help='adding Wasserstein Loss')
-        self.parser.add_argument('--Gaussian_Discriminator', type=bool, default=False,
-                                 help='add Gaussian to the discriminator with high weights in the center')
         self.parser.add_argument('--segmentation_Discriminator', type=bool, default=False,
-                                 help='add discriminator for segmentation model')
-        self.parser.add_argument('--ssim_fake_images_loss', type=bool, default=False, help='ssim loss for fake images')
-        self.parser.add_argument('--weight_ssim_loss', type=float, default=1.0,
-                                 help='weight for ssim loss for fake images')
-        # self.parser.add_argument('--seg_discriminator', type=bool, default=False, help='discriminator for seg images comparing real GT  and segmentation of fake CT images')
+                                 help='add discriminator for segmentation model in cyclegan')
 
         self.parser.add_argument('--MIND_loss', type=bool, default=True, help='add MIND loss to the network ')
         self.parser.add_argument('--lambda_mind', type=float, default=0.1, help='weight for lambda_mind ')
@@ -194,7 +188,7 @@ class BaseOptions():
                                  help=' compare MRI with MRI and CT with CT')
         self.parser.add_argument('--CC_diffModalityLoss', type=bool, default=True, help=' compare MRI with CT ')
 
-        self.parser.add_argument('--patience', type=int, default=5, help='patience in early stopping')
+        self.parser.add_argument('--patience', type=int, default=5, help='patience in early stopping in cyclegan')
         self.parser.add_argument('--gradient_penalty', type=bool, default=True, help='adding gradient penalty')
         self.parser.add_argument('--gradient_penalty_lambda', type=int, default=2,
                                  help='represents the weight or strength of the gradient penalty regularization term')
@@ -216,7 +210,7 @@ class BaseOptions():
         self.parser.add_argument('--which_direction', type=str, default='AtoB', help='AtoB or BtoA')
         self.parser.add_argument('--nThreads', default=2, type=int, help='# threads for loading data')
         self.parser.add_argument('--checkpoints_dir', type=str,
-                                 default='/home/rtm/scratch/model_outputs/checkpoints/final2D',
+                                 default='./model_outputs/checkpoints/final2D',
                                  help='models are saved here')
         self.parser.add_argument('--norm', type=str, default='instance',
                                  help='instance normalization or batch normalization')
@@ -236,7 +230,7 @@ class BaseOptions():
         self.parser.add_argument('--weight_2', type=int, default=1, help='weight of left kidney')
         self.parser.add_argument('--weight_3', type=int, default=1, help='weight of right kidney')
         self.parser.add_argument('--weight_7', type=int, default=1, help='weight of stomach')
-        self.parser.add_argument('--test_CT_dir', type=str, default='/home/rtm/scratch/2D/CT', help='for test seg')
+        self.parser.add_argument('--test_CT_dir', type=str, default='./scratch/2D/CT', help='for test seg')
         self.parser.add_argument('--custom_sub_dir', type=int, default=0, help='custom_sub_dir')
 
         self.initialized = True
