@@ -6,7 +6,7 @@
 # Initialize the level_flag variable
 level_flag=0
 # reading command line arguments
-while getopts "a:l:c:m:r:b:" OPT
+while getopts "a:l:c:w:m:r:b:" OPT
   do
 
   case $OPT in
@@ -26,6 +26,13 @@ while getopts "a:l:c:m:r:b:" OPT
    ct_image_name=$OPTARG
    level_flag=2
    echo '-c  CT' $ct_image_name
+
+   ;;
+
+   w) #MRI preprocess
+   ct_image_name=$OPTARG
+   level_flag=3
+   echo '-w  MRI ' $mri_image_name
 
    ;;
 
@@ -190,6 +197,47 @@ if [[ $level_flag == 2 ]]; then
 
 fi
 
+########################## MRI preprocess ##########################
+if [[ $level_flag == 3 ]]; then
+
+      N4_atlas_path='path-to-save-N4-mri'
+      registered_atlas_path='path-to-save-registered-mri'
+      mni_image='path-to-icbm-template'
+      mkdir -p $registered_atlas_path $N4_atlas_path
+
+      # Extract the basename of the MRI image
+      input_basename="$(basename -- $mri_image_name)"
+      echo 'input_basename' $input_basename
+
+      # Apply N4 Bias Field Correction
+      img_postfix='N4correct_'
+      image_name_N4="$img_postfix$input_basename"
+      full_image_name_N4="$N4_atlas_path$image_name_N4"
+      echo '$mri_image_name ' $mri_image_name ' $full_image_name_N4 ' $full_image_name_N4
+
+      N4BiasFieldCorrection -d 3 -r 1 -b [200,2] -c [400x200x100x40,0.0] \
+      -i $mri_image_name -o $full_image_name_N4
+
+      # Register MRI to MNI space
+      img_postfix='Registered_'
+      image_basename="$img_postfix$input_basename"
+      full_image_name_registered="$registered_atlas_path$image_basename"
+      echo '$full_image_name_registered ' $full_image_name_registered
+
+      # Generate transformation matrix filename
+      img_postfix='omat_'
+      input_basename_without_postfix=$(echo $input_basename | cut -d . -f 1 -)
+      image_basename="$img_postfix$input_basename_without_postfix.mat"
+      full_image_name_registered_mat="$registered_atlas_path$image_basename"
+      echo '$full_image_name_registered_mat ' $full_image_name_registered_mat
+
+      # Perform registration of MRI to MNI space and save the transformation matrix
+      flirt -in $mri_image_name -ref $mni_image -out $full_image_name_registered -omat $full_image_name_registered_mat
+
+      # Histogram matching for MRI image to MNI template
+      fslmaths $full_image_name_registered -histmatch $mni_image $full_image_name_registered
+
+fi
 
 
 ########################## Register CT images to MRI ##########################
