@@ -51,3 +51,22 @@ We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fu
    - **UNSB:** `sb_test.py`
    - **CUT:** `cut_test.py`
    - **CycleGAN:** `CycleGAN_test.py`
+### Data Preparation
+
+#### Downloading Data
+- **OASIS Data:**
+  - Run `download_oasis_scans.sh` in `data_preprocessing`.
+
+#### Preprocessing
+
+- **MRI Data (without CT and label pairs):**
+  - Run `run_mri_preprocess.sh`.
+
+- **CT Scans (without MRI pairs):**
+  - Run `run_ct_preprocess.sh`.
+
+- **CT and MRI Pairs:**
+  - Run `run_CT2MR_registration.sh`.
+
+- **MRI with Labels:**
+  - Run `run_MRI_Labels_preprocess.sh`.
