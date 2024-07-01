@@ -44,3 +44,10 @@ We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fu
    - Configure settings in `options/base_options.py`.
 2. **Run training:**
    - Execute `run_models.sh`.
+### Testing
+1. **Run tests:**
+   - Execute `run_test.sh`.
+2. **Set options for different models:**
+   - **UNSB:** `sb_test.py`
+   - **CUT:** `cut_test.py`
+   - **CycleGAN:** `CycleGAN_test.py`
