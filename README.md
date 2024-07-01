@@ -70,3 +70,14 @@ We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fu
 
 - **MRI with Labels:**
   - Run `run_MRI_Labels_preprocess.sh`.
+### Label Creation
+
+#### Label Fusion Method
+1. **Brain Extraction:**
+   - Extract brain in MRIs in atlas and target images using `run_beast.sh`.
+2. **Label Fusion:**
+   - Use extracted MRIs to run`labelFusion_neuroglia.sh`.
+
+#### Extracting Ventricle Labels
+- **Extract Ventricle from Whole Brain Label:**
+  - Run `run_extract_labels.sh`.
