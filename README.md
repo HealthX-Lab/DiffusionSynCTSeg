@@ -37,3 +37,10 @@ We developed a novel, uncertainty-aware, diffusion-based CT brain ventricle segm
 
 Acknowledgment:
 We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fund number NFRFE-2020-00241.
+
+## Guide for Running Code
+### Training
+1. **Set options:**
+   - Configure settings in `options/base_options.py`.
+2. **Run training:**
+   - Execute `run_models.sh`.
