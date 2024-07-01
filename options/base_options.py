@@ -48,7 +48,8 @@ class BaseOptions():
                                  help='save test sege output results')
 
         self.parser.add_argument('--dataset_mode', type=str, default='yh_seg',
-                                 help='chooses how datasets are loadfed. [unaligned | aligned | single | yh | yh_seg| yh_test_seg | yh_seg]')
+                                 help='chooses how datasets are loadfed. For our work set it to yh_seg. '
+                                      '[unaligned | aligned | single | yh | yh_seg| yh_test_seg | yh_seg]')
         self.parser.add_argument('--model', type=str, default='cycle_seg',
                                  help='chooses which model to use. sb (for UNSB) | cut (for CUT model) |  cycle_seg (for cyclegan with segmentaiton) | test (CycleGAN test)  | TestGANModel | cycle_gan')
         self.parser.add_argument('--yh_run_model', type=str, default='Train',
