@@ -37,3 +37,47 @@ We developed a novel, uncertainty-aware, diffusion-based CT brain ventricle segm
 
 Acknowledgment:
 We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fund number NFRFE-2020-00241.
+
+## Guide for Running Code
+### Training
+1. **Set options:**
+   - Configure settings in `options/base_options.py`.
+2. **Run training:**
+   - Execute `run_models.sh`.
+### Testing
+1. **Run tests:**
+   - Execute `run_test.sh`.
+2. **Set options for different models:**
+   - **UNSB:** `sb_test.py`
+   - **CUT:** `cut_test.py`
+   - **CycleGAN:** `CycleGAN_test.py`
+### Data Preparation
+
+#### Downloading Data
+- **OASIS Data:**
+  - Run `download_oasis_scans.sh` in `data_preprocessing`.
+
+#### Preprocessing
+
+- **MRI Data (without CT and label pairs):**
+  - Run `run_mri_preprocess.sh`.
+
+- **CT Scans (without MRI pairs):**
+  - Run `run_ct_preprocess.sh`.
+
+- **CT and MRI Pairs:**
+  - Run `run_CT2MR_registration.sh`.
+
+- **MRI with Labels:**
+  - Run `run_MRI_Labels_preprocess.sh`.
+### Label Creation
+
+#### Label Fusion Method
+1. **Brain Extraction:**
+   - Extract brain in MRIs in atlas and target images using `run_beast.sh`.
+2. **Label Fusion:**
+   - Use extracted MRIs to run`labelFusion_neuroglia.sh`.
+
+#### Extracting Ventricle Labels
+- **Extract Ventricle from Whole Brain Label:**
+  - Run `run_extract_labels.sh`.
