@@ -1,3 +1,4 @@
+
 # Deep learning-based brain ventricle segmentation in Computed Tomography using domain adaptation
 ## Project Overview
 Efficient and accurate brain ventricle segmentation from clinical CT scans is critical for emergency surgeries like ventriculostomy. Our project introduces a novel uncertainty-aware ventricle segmentation technique that leverages diffusion-model-based domain adaptation without the need for CT segmentation ground truths. This method employs the diffusion Schrödinger Bridge and an attention recurrent residual U-Net to utilize unpaired CT and MRI scans for automatic CT segmentation, demonstrating significant improvement over traditional methods. For detailed insights, you can read our paper: [CT-based brain ventricle segmentation via
@@ -81,3 +82,4 @@ We acknowledge the support of the New Frontiers in Research Fund (NFRF) under fu
 #### Extracting Ventricle Labels
 - **Extract Ventricle from Whole Brain Label:**
   - Run `run_extract_labels.sh`.
+
