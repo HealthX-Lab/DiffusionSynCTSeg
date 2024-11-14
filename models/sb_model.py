@@ -16,6 +16,7 @@ import torch.nn as nn
 class SBModel(BaseModel):
     def name(self):
         return 'sb'
+
     @staticmethod
     def modify_commandline_options(opt, is_train=True):
         """  Configures options specific for SB model
@@ -24,7 +25,6 @@ class SBModel(BaseModel):
         import argparse
         parser = argparse.ArgumentParser()
         parser.add_argument('--mode', type=str, default="sb", choices='(FastCUT, fastcut, sb)')
-        
 
         parser.add_argument('--lambda_GAN', type=float, default=1.0, help='weight for GAN loss：GAN(G(X))')
         parser.add_argument('--lambda_NCE', type=float, default=1.0, help='weight for NCE loss: NCE(G(X), X)')
@@ -47,42 +47,42 @@ class SBModel(BaseModel):
 
         # diffusion
         parser.add_argument('--num_timesteps', type=int, default=5,
-                                 help='# of discrim filters in the first conv layer')
+                            help='# of discrim filters in the first conv layer')
         parser.add_argument('--embedding_dim', type=int, default=1,
-                                 help='# of output image channels: 3 for RGB and 1 for grayscale')
+                            help='# of output image channels: 3 for RGB and 1 for grayscale')
         parser.add_argument('--netD', type=str, default='basic_cond',
-                                 choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2'],
-                                 help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
+                            choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2'],
+                            help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
         parser.add_argument('--netE', type=str, default='basic_cond',
-                                 choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2',
-                                          'patchstylegan2'],
-                                 help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
+                            choices=['basic', 'n_layers', 'pixel', 'patch', 'tilestylegan2', 'stylegan2',
+                                     'patchstylegan2'],
+                            help='specify discriminator architecture. The basic model is a 70x70 PatchGAN. n_layers allows you to specify the layers in the discriminator')
         parser.add_argument('--netG', type=str, default='resnet_9blocks_cond',
-                                 choices=['resnet_9blocks', 'resnet_6blocks', 'unet_256', 'unet_128', 'stylegan2',
-                                          'smallstylegan2', 'resnet_cat'], help='specify generator architecture')
+                            choices=['resnet_9blocks', 'resnet_6blocks', 'unet_256', 'unet_128', 'stylegan2',
+                                     'smallstylegan2', 'resnet_cat'], help='specify generator architecture')
         parser.add_argument('--embedding_type', type=str, default='positional', choices=['fourier', 'positional'],
-                                 help='specify generator architecture')
+                            help='specify generator architecture')
         parser.add_argument('--n_mlp', type=int, default=3, help='only used if netD==n_layers')
         parser.add_argument('--normG', type=str, default='instance', choices=['instance', 'batch', 'none'],
-                                 help='instance normalization or batch normalization for G')
+                            help='instance normalization or batch normalization for G')
         parser.add_argument('--normD', type=str, default='instance', choices=['instance', 'batch', 'none'],
-                                 help='instance normalization or batch normalization for D')
+                            help='instance normalization or batch normalization for D')
         parser.add_argument('--init_type', type=str, default='xavier',
-                                 choices=['normal', 'xavier', 'kaiming', 'orthogonal'], help='network initialization')
+                            choices=['normal', 'xavier', 'kaiming', 'orthogonal'], help='network initialization')
         parser.add_argument('--init_gain', type=float, default=0.02,
-                                 help='scaling factor for normal, xavier and orthogonal.')
+                            help='scaling factor for normal, xavier and orthogonal.')
         parser.add_argument('--no_dropout', type=util.str2bool, nargs='?', const=True, default=True)
         parser.add_argument('--std', type=float, default=0.25, help='Scale of Gaussian noise added to data')
         parser.add_argument('--tau', type=float, default=0.01, help='Entropy parameter')
         parser.add_argument('--no_antialias', action='store_true',
-                                 help='if specified, use stride=2 convs instead of antialiased-downsampling (sad)')
+                            help='if specified, use stride=2 convs instead of antialiased-downsampling (sad)')
         parser.add_argument('--no_antialias_up', action='store_true',
-                                 help='if specified, use [upconv(learned filter)] instead of [upconv(hard-coded [1,3,3,1] filter), conv]')
+                            help='if specified, use [upconv(learned filter)] instead of [upconv(hard-coded [1,3,3,1] filter), conv]')
 
         parser.add_argument('--segmentation', type=bool, default=True, help='adding segmentation model')
         # parser.add_argument('--seg_type', type=str, default='unet_128', help='unet_128,  resnet_9blocks, R2AttU_Net, AttU_Net, R2U_Net selects model to do segmentation netSeg')
         parser.add_argument('--seg_norm', type=str, default='CrossEntropy',
-                                 help='DiceNorm or CrossEntropy or CombinationLoss')
+                            help='DiceNorm or CrossEntropy or CombinationLoss')
         parser.add_argument('--seg_weight', type=int, default=1,
                             help='segmentation loss weight')
         parser.add_argument('--separate_seg', type=bool, default=False,
@@ -101,9 +101,7 @@ class SBModel(BaseModel):
         parser.add_argument('--diff_uncertainty', type=bool, default=True,
                             help='add uncertainty to the model ')
 
-
         # diffusion
-
 
         parser.set_defaults(pool_size=0)  # no image pooling
 
@@ -114,9 +112,7 @@ class SBModel(BaseModel):
             setattr(opt, key, value)
         opt.crossentropy_weight = [1, 30]
         opt.nce_idt = True
-        opt.lambda_NCE=1.0
-
-
+        opt.lambda_NCE = 1.0
 
         return opt
 
@@ -128,17 +124,12 @@ class SBModel(BaseModel):
         self.input_B = self.Tensor(opt.batchSize, opt.input_nc, opt.fineSize, opt.fineSize)
         self.input_Seg = torch.zeros(nb, opt.output_nc_seg, size, size)
 
-        # self.image_array = np.zeros((25, 136, 156), dtype=np.float32)
-
-
         self.results = {}
 
         opt = self.modify_commandline_options(opt)
 
-
         opt.no_dropout = False
         BaseModel.initialize(self, opt)
-
 
         # specify the training losses you want to print out.
         # The training/test scripts will call <BaseModel.get_current_losses>
@@ -175,9 +166,8 @@ class SBModel(BaseModel):
                                       opt.init_gain, opt.no_antialias, self.gpu_ids, opt)
         if opt.segmentation:
             self.netSeg = networks.define_seg(opt.input_nc_seg, opt.output_nc_seg,
-                                              opt.which_model_netSeg, opt.norm,opt.init_type, not opt.no_dropout,
-                                              self.gpu_ids, uncertainty=opt.uncertainty,mode=opt.mode_seg)
-            
+                                              opt.which_model_netSeg, opt.norm, opt.init_type, not opt.no_dropout,
+                                              self.gpu_ids, uncertainty=opt.uncertainty, mode=opt.mode_seg)
 
         if self.isTrain:
             self.netD = networks.define_D(opt.output_nc, opt.ndf, opt.netD, opt.n_layers_D, opt.normD, opt.init_type,
@@ -201,7 +191,8 @@ class SBModel(BaseModel):
                                                           betas=(opt.beta1, opt.beta2))
                     self.optimizers.append(self.optimizer_seg)
             elif opt.segmentation and not opt.separate_seg:
-                self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG.parameters(),self.netSeg.parameters()), lr=opt.lr, betas=(opt.beta1, opt.beta2))
+                self.optimizer_G = torch.optim.Adam(itertools.chain(self.netG.parameters(), self.netSeg.parameters()),
+                                                    lr=opt.lr, betas=(opt.beta1, opt.beta2))
                 self.optimizers.append(self.optimizer_G)
             self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
             self.optimizer_E = torch.optim.Adam(self.netE.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2))
@@ -215,7 +206,7 @@ class SBModel(BaseModel):
                 Depth = opt.Depth
                 nb = opt.batchSize
                 size = opt.fineSize
-                self.input_Seg_one = self.Tensor(size=(nb,  Depth, size, size))
+                self.input_Seg_one = self.Tensor(size=(nb, Depth, size, size))
                 self.fake_B_3d = self.Tensor(nb, 1, Depth, size, size)
                 self.real_B_3d = self.Tensor(nb, 1, Depth, size, size)
                 self.input_B = self.Tensor(nb, 1, Depth, size, size)
@@ -233,15 +224,13 @@ class SBModel(BaseModel):
                 nb = opt.batchSize
                 size = opt.fineSize
                 mc_number = self.opt.num_samples_uncertainty
-                self.input_Seg_one = self.Tensor(size=(nb,  Depth, size, size))
+                self.input_Seg_one = self.Tensor(size=(nb, Depth, size, size))
                 self.fake_B_3d = self.Tensor(mc_number, 1, Depth, size, size)
                 self.real_B_3d = self.Tensor(nb, 1, Depth, size, size)
                 self.input_B = self.Tensor(nb, 1, Depth, size, size)
 
                 self.fake_seg = self.Tensor(mc_number, 2, Depth, size, size)
                 self.real_seg = self.Tensor(mc_number, 2, Depth, size, size)
-
-
 
             self.load_network_seg(self.netG, 'G', opt.which_epoch)
             self.load_network_seg(self.netSeg, 'Seg', opt.which_epoch)
@@ -284,7 +273,7 @@ class SBModel(BaseModel):
         self.recall = 0
         self.specificity = 0
         self.ssim_value_B = 0
-        if self.number_of_images % 41 ==0:
+        if self.number_of_images % 41 == 0:
             self.image_array = np.zeros((30, 136, 156), dtype=np.float32)
 
             self.TP = 0
@@ -317,7 +306,7 @@ class SBModel(BaseModel):
             self.compute_G_loss().backward()
             self.compute_D_loss().backward()
             self.compute_E_loss().backward()
-            if self.opt.segmentation and self.opt.separate_seg and self.opt.mode_seg=='2d':
+            if self.opt.segmentation and self.opt.separate_seg and self.opt.mode_seg == '2d':
                 self.loss_seg.backward()
             if self.opt.lambda_NCE > 0.0:
                 self.optimizer_F = torch.optim.Adam(self.netF.parameters(), lr=self.opt.lr,
@@ -353,7 +342,8 @@ class SBModel(BaseModel):
         self.optimizer_G.zero_grad()
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.zero_grad()
-        if self.opt.segmentation and self.opt.separate_seg and self.opt.mode_seg=='2d'or (self.opt.mode_seg=='3d'and self.data_number%41 ==40 and self.opt.separate_seg):
+        if self.opt.segmentation and self.opt.separate_seg and self.opt.mode_seg == '2d' or (
+                self.opt.mode_seg == '3d' and self.data_number % 41 == 40 and self.opt.separate_seg):
             self.optimizer_seg.zero_grad()
         self.loss_G = self.compute_G_loss()
         # self.compute_G_loss()
@@ -361,11 +351,12 @@ class SBModel(BaseModel):
         self.optimizer_G.step()
         if self.opt.netF == 'mlp_sample':
             self.optimizer_F.step()
-        if self.opt.segmentation and self.opt.separate_seg and self.opt.mode_seg=='2d'or (self.opt.mode_seg=='3d'and self.data_number%41 ==40 and self.opt.separate_seg):
+        if self.opt.segmentation and self.opt.separate_seg and self.opt.mode_seg == '2d' or (
+                self.opt.mode_seg == '3d' and self.data_number % 41 == 40 and self.opt.separate_seg):
             self.loss_seg.backward()
             self.optimizer_seg.step()
 
-    def set_input(self, input, input2=None,d=0):
+    def set_input(self, input, input2=None, d=0):
 
         """Unpack input data from the dataloader and perform necessary pre-processing steps.
         Parameters:
@@ -388,23 +379,20 @@ class SBModel(BaseModel):
         if self.opt.segmentation:
             if self.opt.mode_seg == '2d':
                 from torch.autograd import Variable
-                self.real_Seg= input['Seg_one'].to(self.device)
+                self.real_Seg = input['Seg_one'].to(self.device)
                 self.real_Seg = Variable(self.real_Seg.long())
                 input_Seg = input['Seg']
                 self.input_Seg.resize_(input_Seg.size()).copy_(input_Seg)
                 self.input_Seg = Variable(self.input_Seg)
 
-            elif self.opt.mode_seg =='3d':
+            elif self.opt.mode_seg == '3d':
                 self.data_number = d
                 seg_2D = input['Seg_one']
 
-                if d%41 < self.opt.Depth:
+                if d % 41 < self.opt.Depth:
                     # print('in setting 3D seg in input ', d%41)
-                    self.input_Seg_one[0, d%41, :, :] = seg_2D
-                    self.real_B_3d[:, :, d%41, :, :] = self.real_B
-
-            
-            
+                    self.input_Seg_one[0, d % 41, :, :] = seg_2D
+                    self.real_B_3d[:, :, d % 41, :, :] = self.real_B
 
     def forward(self):
 
@@ -426,22 +414,21 @@ class SBModel(BaseModel):
                 self.netG.eval()
                 for t in range(self.time_idx[0].int().item() + 1):
                     # print('t : ',t)
-    
                     if t > 0:
                         delta = times[t] - times[t - 1]
                         denom = times[-1] - times[t - 1]
                         inter = (delta / denom).reshape(-1, 1, 1, 1)
                         scale = (delta * (1 - delta / denom)).reshape(-1, 1, 1, 1)
                     Xt = self.real_A if (t == 0) else (1 - inter) * Xt + inter * Xt_1.detach() + (
-                                scale * tau).sqrt() * torch.randn_like(Xt).to(self.real_A.device)
+                            scale * tau).sqrt() * torch.randn_like(Xt).to(self.real_A.device)
                     time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                     time = times[time_idx]
                     z = torch.randn(size=[self.real_A.shape[0], 4 * self.opt.ngf]).to(self.real_A.device)
                     # print('real_A ',Xt.shape,z.shape)
                     Xt_1 = self.netG(Xt, time_idx, z)
-    
+
                     Xt2 = self.real_A2 if (t == 0) else (1 - inter) * Xt2 + inter * Xt_12.detach() + (
-                                scale * tau).sqrt() * torch.randn_like(Xt2).to(self.real_A.device)
+                            scale * tau).sqrt() * torch.randn_like(Xt2).to(self.real_A.device)
                     time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                     time = times[time_idx]
                     z = torch.randn(size=[self.real_A.shape[0], 4 * self.opt.ngf]).to(self.real_A.device)
@@ -450,11 +437,9 @@ class SBModel(BaseModel):
                     if self.opt.Generation_step_seg:
                         seg = self.netSeg(Xt_12)
 
-
-    
                     if self.opt.nce_idt:
                         XtB = self.real_B if (t == 0) else (1 - inter) * XtB + inter * Xt_1B.detach() + (
-                                    scale * tau).sqrt() * torch.randn_like(XtB).to(self.real_A.device)
+                                scale * tau).sqrt() * torch.randn_like(XtB).to(self.real_A.device)
                         time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                         time = times[time_idx]
                         z = torch.randn(size=[self.real_A.shape[0], 4 * self.opt.ngf]).to(self.real_A.device)
@@ -473,10 +458,10 @@ class SBModel(BaseModel):
             """Run forward pass"""
             self.real = torch.cat((self.real_A, self.real_B),
                                   dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A
-    
+
             self.realt = torch.cat((self.real_A_noisy, self.XtB),
                                    dim=0) if self.opt.nce_idt and self.opt.isTrain else self.real_A_noisy
-    
+
             if self.opt.flip_equivariance:
                 self.flipped_for_equivariance = self.opt.isTrain and (np.random.random() < 0.5)
                 if self.flipped_for_equivariance:
@@ -517,6 +502,8 @@ class SBModel(BaseModel):
                         if self.data_number % 41 == 40 and self.data_number:
                             self.fake_seg = self.netSeg(self.fake_B_3d)
 
+                setattr(self, "seg_fake", self.fake_seg)
+
         if self.opt.phase == 'test':
             tau = self.opt.tau
             T = self.opt.num_timesteps
@@ -533,6 +520,7 @@ class SBModel(BaseModel):
             self.timestep = times[time_idx]
             visuals = []
             with torch.no_grad():
+                self.netG.eval()
                 for t in range(self.opt.num_timesteps):
 
                     if t > 0:
@@ -541,7 +529,7 @@ class SBModel(BaseModel):
                         inter = (delta / denom).reshape(-1, 1, 1, 1)
                         scale = (delta * (1 - delta / denom)).reshape(-1, 1, 1, 1)
                     Xt = self.real_A if (t == 0) else (1 - inter) * Xt + inter * Xt_1.detach() + (
-                                scale * tau).sqrt() * torch.randn_like(Xt).to(self.real_A.device)
+                            scale * tau).sqrt() * torch.randn_like(Xt).to(self.real_A.device)
                     time_idx = (t * torch.ones(size=[self.real_A.shape[0]]).to(self.real_A.device)).long()
                     time = times[time_idx]
                     z = torch.randn(size=[self.real_A.shape[0], 4 * self.opt.ngf]).to(self.real_A.device)
@@ -556,8 +544,8 @@ class SBModel(BaseModel):
                         setattr(self, "uncertainty_real_CT_seg" + str(t + 1), real_seg)
 
                 if self.opt.mode_seg == '2d':
-                    self.fake_seg = self.netSeg.forward(self.fake_B)
-                    self.real_seg = self.netSeg.forward(self.real_B)
+                    self.fake_seg = self.netSeg(self.fake_B)
+                    self.real_seg = self.netSeg(self.real_B)
                 elif self.opt.mode_seg == '3d':
                     d = self.data_number
                     if d % 41 < self.opt.Depth:
@@ -568,7 +556,6 @@ class SBModel(BaseModel):
                         # print(' in segmentaion 3d')
                         self.fake_seg = self.netSeg.forward(self.fake_B_3d)
                         self.real_seg = self.netSeg.forward(self.real_B_3d)
-
 
     def compute_D_loss(self):
         """Calculate GAN loss for the discriminator"""
@@ -664,9 +651,6 @@ class SBModel(BaseModel):
                     if not self.opt.separate_seg:
                         self.loss_G += (self.loss_seg * self.opt.seg_weight)
 
-
-
-
         return self.loss_G
 
     def calculate_NCE_loss(self, src, tgt):
@@ -694,9 +678,7 @@ class SBModel(BaseModel):
         setattr(self, "visual_real_A", real_A)
 
         if self.opt.segmentation and self.opt.phase == 'test':
-
-            # print('real seg 1 ')
-            self.visual_seg_real = util.tensor2seg(self.seg_real.data[:,1,:,:])
+            self.visual_seg_real = util.tensor2seg(self.seg_real.data[:, 1, :, :])
 
         if self.opt.phase == 'test':
             for t in range(self.opt.num_timesteps):
@@ -716,41 +698,26 @@ class SBModel(BaseModel):
             visual_fake_B = util.tensor2im(self.fake_B.data)
             setattr(self, "visual_fake_B", visual_fake_B)
 
-
-
-
-
-
-
     def get_current_visuals(self):
-        if self.opt.phase != 'test':
+        if self.opt.MC_uncertainty == False:
             real_A = util.tensor2im(self.real_A.data)
             fake_B = util.tensor2im(self.fake_B.data)
 
             real_B = util.tensor2im(self.real_B.data)
             input_Seg = util.tensor2seg(self.input_Seg.data)
 
-            # fake_seg = util.tensor2seg(torch.max(F.softmax(self.fake_seg.data, dim=1), dim=1, keepdim=True)[1])
-            # real_seg = util.tensor2seg(torch.max(F.softmax(self.real_seg.data, dim=1), dim=1, keepdim=True)[1])
-            # print('fake ****')
-            fake_seg = util.tensor2seg(F.softmax(self.fake_seg.data, dim=1)[:,1,:,:])
-            # print('real ****')
-            # real_seg = util.tensor2seg(F.softmax(self.real_seg.data, dim=1)[:,1,:,:])#>0.005
-            # print('fake ****')
-            # fake_seg = util.tensor2seg( torch.sigmoid(self.fake_seg.data[:, 1, :, :]))
-            # print('real ****')
-            # real_seg = util.tensor2seg( torch.sigmoid(self.real_seg.data[:, 1, :, :]))  # >0.005
-
+            fake_seg = util.tensor2seg(F.softmax(self.fake_seg.data, dim=1)[:, 1, :, :])
+            real_seg = util.tensor2seg(F.softmax(self.real_seg.data, dim=1)[:, 1, :, :])  # >0.005
 
             return OrderedDict([('real_A', real_A), ('fake_B', fake_B),
                                 ('real_B', real_B),
-                                ('fake_seg', fake_seg), ('input_seg', input_Seg)])#,('real_seg', real_seg)
-        elif self.opt.phase == 'test':
+                                ('fake_seg', fake_seg), ('input_seg', input_Seg), ('real_seg', real_seg)])  #
+        else:
             visuals = {}
 
             visuals['fake_B'] = [util.tensor2im(self.fake_B.data)]
             visuals['fake_seg'] = [util.tensor2seg(F.softmax(self.fake_seg.data, dim=1)[:, 1, :, :])]
-            visuals['seg_real'] = [util.tensor2seg(F.softmax(self.real_seg.data, dim=1)[:,1,:,:])]
+            visuals['seg_real'] = [util.tensor2seg(F.softmax(self.real_seg.data, dim=1)[:, 1, :, :])]
 
             heatmap = {key: util.tensor2seg(self.heatmap[key]) for key in self.heatmap.keys() if 'seg' in key}
             uncertainty_map = {key: util.tensor2map(self.uncertainty_map[key]) for key in self.uncertainty_map.keys()}
@@ -774,19 +741,14 @@ class SBModel(BaseModel):
                 ('Confidence_Map', confidence_map),
                 ('Entropy_Map', entropy_map),
                 ('Visuals', visuals),
-                ('seg_gamma1', util.tensor2seg(self.visual_gamma1)),
-                ('seg_gamma2', util.tensor2seg(self.visual_gamma2))
+                # ('seg_gamma1', util.tensor2seg(self.visual_gamma1)),
+                # ('seg_gamma2', util.tensor2seg(self.visual_gamma2))
             ])
-
-
-
-
-
 
     def enable_dropout(self):
         """ Function to enable the dropout layers during test-time """
         models = [self.netG, self.netSeg]
-        for i in range(0,len(models)):
+        for i in range(0, len(models)):
             for m in models[i].modules():
                 if m.__class__.__name__.startswith('Dropout'):
                     # print('******', m.__class__.__name__)
@@ -802,10 +764,10 @@ class SBModel(BaseModel):
         if not self.opt.MC_uncertainty:
             self.forward()
 
-        elif self.opt.MC_uncertainty :
-            if self.opt.mode_seg =='2d':
+        elif self.opt.MC_uncertainty:
+            if self.opt.mode_seg == '2d':
                 self.create_uncertainty()
-            elif self.opt.mode_seg =='3d':
+            elif self.opt.mode_seg == '3d':
                 for i in range(0, self.opt.num_samples_uncertainty):
 
                     if self.data_number % 41 <= (self.opt.Depth - 1):
@@ -819,8 +781,8 @@ class SBModel(BaseModel):
     def compute_3D(self):
 
         for i in range(0, self.opt.num_samples_uncertainty):
-
-            self.fake_seg[i, :, :, :, :] = F.softmax(self.netSeg.forward(self.fake_B_3d[i].unsqueeze(0)), dim=1).detach().cpu()
+            self.fake_seg[i, :, :, :, :] = F.softmax(self.netSeg.forward(self.fake_B_3d[i].unsqueeze(0)),
+                                                     dim=1).detach().cpu()
             self.real_seg[i, :, :, :, :] = F.softmax(self.netSeg.forward(self.real_B_3d), dim=1).detach().cpu()
 
         self.result_list = []
@@ -839,18 +801,14 @@ class SBModel(BaseModel):
             self.mean, self.var, self.heatmap, self.uncertainty_map, self.confidence_map, self.entropy_map = self.compute_txt(
                 self.MC_uncertainty_outputs)
 
-            slice_seg = self.input_Seg_one[ :, slice_number, :, :].detach().cpu()
-            self.input_Seg[:,1,:,:] = slice_seg
+            slice_seg = self.input_Seg_one[:, slice_number, :, :].detach().cpu()
+            self.input_Seg[:, 1, :, :] = slice_seg
             self.real_B = self.real_B_3d[:, :, slice_number, :, :].detach().cpu()
             self.set_coef()
             result = self.get_coef()
             result['epoch'] = self.opt.which_epoch
             result['data_number'] = slice_number
             self.result_list.append(result)
-
-
-
-
 
     def create_uncertainty(self):
         self.MC_uncertainty_outputs = {'fake_B': [], 'fake_seg': [], 'seg_real': []}
@@ -877,17 +835,15 @@ class SBModel(BaseModel):
                 self.MC_uncertainty_outputs['seg_real'].append(real_seg.detach().cpu())
                 self.MC_uncertainty_outputs['fake_B'].append(fake_B.detach().cpu())
 
-
         self.mean, self.var, self.heatmap, self.uncertainty_map, self.confidence_map, self.entropy_map = self.compute_txt(
             self.MC_uncertainty_outputs)
         self.input_Seg = self.input_Seg.detach().cpu()
         self.real_B = self.real_B.detach().cpu()
-
-        self.set_image(self.number_of_images, self.crop_images(self.mean['seg_real']))
+        if self.number_of_images < 30:
+            self.set_image(self.number_of_images, self.crop_images(self.mean['seg_real']))
         self.set_coef()
         if self.number_of_images % 41 == 40:
             self.set_3Dcoef()
-
 
     def compute_txt(self, outputs):
         mean = {key: None for key in outputs.keys()}
@@ -905,7 +861,7 @@ class SBModel(BaseModel):
                 uncertainty_map[key] = var[key].max(dim=1)[0].sqrt()
                 confidence_map[key] = mean[key].max(dim=1)[0]
                 entropy_map[key] = self.compute_entropy(mean[key])
-                if key =='seg_real' :
+                if key == 'seg_real':
                     self.cal_manual_dice(outputs[key])
                     self.cal_manual_iou(outputs[key])
 
@@ -954,6 +910,7 @@ class SBModel(BaseModel):
 
         self.processed_dice3d(y_pred1, y_pred2)
         return pure_dice, dice_gamma_1, dice_gamma_2
+
     def processed_dice3d(self, y_pred1, y_pred2):
         y_true = self.input_Seg[:, 1, :, :].view(-1).detach().cpu().numpy()
         y_pred1 = y_pred1.view(-1).detach().cpu().numpy()
@@ -961,7 +918,6 @@ class SBModel(BaseModel):
 
         self.tn1, self.fp1, self.fn1, self.tp1 = confusion_matrix(y_true, y_pred1, labels=[0, 1]).ravel()
         self.tn2, self.fp2, self.fn2, self.tp2 = confusion_matrix(y_true, y_pred2, labels=[0, 1]).ravel()
-
 
     def crop_images(self, seg):
         # print('****&*&*',np.shape(seg))
@@ -1014,15 +970,13 @@ class SBModel(BaseModel):
 
         return binary_image
 
-
-
-    def probability(self,img):
+    def probability(self, img):
         stacked_output = torch.stack(img)
         mean = stacked_output.mean(dim=0)
         var = stacked_output.var(dim=0)
         return mean, var
 
-    def calculate_ssim(self,image1, image2):
+    def calculate_ssim(self, image1, image2):
         import torch
         import torchmetrics
         import torchvision.transforms.functional as F
@@ -1036,7 +990,7 @@ class SBModel(BaseModel):
 
         # Initialize SSIM metric
         ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure(kernel_size=11, data_range=1.0,
-                                                                    gaussian_kernel=True, sigma=1)
+                                                                          gaussian_kernel=True, sigma=1)
 
         # Calculate SSIM
         ssim_value = ssim_metric(image1, image2)
@@ -1060,19 +1014,6 @@ class SBModel(BaseModel):
         self.percision_2D = self.cal_percision()
 
         self.hist_similarity = self.compare_histograms(self.mean['fake_B'], self.real_B)
-
-        # self.var_fake_B += self.var_fake_B_2D
-        #
-        # self.var_seg_real += self.var_seg_real_2D
-        # self.var_seg_fake += self.var_seg_fake_2D
-        #
-        # self.ssim_value_B += self.ssim_value_B_2D
-        # self.mse_fake_B += self.mse_fake_B_2D
-        #
-        # self.seg_real_IOU += self.seg_real_IOU_2D
-        #
-        # self.seg_fake.append(self.seg_fake_2D)
-        # self.dice_seg_real.append(self.seg_real_2D)
 
     def get_3dcoef(self):
         return self.result_list
@@ -1103,7 +1044,7 @@ class SBModel(BaseModel):
                 'dice_seg_real_2D': self.seg_real_2D,
 
                 'ssim_value_B_2D': self.ssim_value_B_2D,
-                'new_ssim':self.new_ssim,
+                'new_ssim': self.new_ssim,
 
                 # 'var_seg_fake': self.var_seg_fake,
                 'avg_var_seg_fake_2D': self.var_seg_fake_2D,
@@ -1138,8 +1079,8 @@ class SBModel(BaseModel):
                 'specificity': self.specificity,
                 'percision': self.percision,
                 'CT_name': self.image_paths_B[0].split('/')[-1],
-                # 'mri_name': self.image_paths_A[0].split('/')[-1],
-                # 'Seg': self.image_paths_seg[0].split('/')[-1],
+                'mri_name': self.image_paths_A[0].split('/')[-1],
+                'Seg': self.image_paths_seg[0].split('/')[-1],
             }
         return results
 
@@ -1266,8 +1207,6 @@ class SBModel(BaseModel):
 
 
 
-        
 
 
 
-        

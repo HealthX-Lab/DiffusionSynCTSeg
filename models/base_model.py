@@ -48,7 +48,10 @@ class BaseModel():
 
     # helper loading function that can be used by subclasses
     def load_network(self, network, network_label, epoch_label):
-        save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
+        if epoch_label == -1:
+            save_filename = 'net_%s.pth' % (network_label)
+        else:
+            save_filename = '%s_net_%s.pth' % (epoch_label, network_label)
         print('save file name ****** ',save_filename)
         save_path = os.path.join(self.save_dir, save_filename)
 

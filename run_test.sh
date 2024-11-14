@@ -23,4 +23,4 @@ export CUDA_LAUNCH_BLOCKING=1
 export CUDA_ERROR_CHECK=1
 
 
-srun python CycleGAN_test.py # sb_test.py |cut_test.py
+srun python sb_test.py # sb_test.py |cut_test.py
