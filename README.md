@@ -18,6 +18,10 @@ To address these challenges, we developed an innovative end-to-end deep learning
 * Unpaired Neural Schrödinger Bridge (UNSB): [UNSB GitHub](https://github.com/cyclomon/UNSB/tree/main)
 ## Segmentation Models
 Our segmentation phase employed an attention-based residual recurrent U-Net architecture, compared with traditional U-Net and ResNet. For more information on the base segmentation model, see [R2AU-Net](https://www.hindawi.com/journals/scn/2021/6625688/).
+## UNSB_Seg Model Weights
+The weights for the UNSB model with segmentation are available [here](https://drive.google.com/drive/folders/1AI3iAaEm2BJDfF5jDSelfV-pcvVhYhK9?usp=sharing).
+To use these weights, download them and place them in the `./checkpoints/UNSB_Seg` folder.
+
 ## Confidence Measures
 We incorporated Monte Carlo dropouts in both MRI-to-CT translation and CT segmentation phases to provide an intuitive interpretation of the segmentation results.
 ## Inspiration
